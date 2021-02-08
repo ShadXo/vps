@@ -323,16 +323,16 @@ function create_mn_configuration() {
 		echo "running sed on file ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf"                                &>> ${SCRIPT_LOGFILE}
 	fi
 
-        if [ -n "${PRIVKEY[${NUM}]}" ]; then
-        	if [ ${#PRIVKEY[${NUM}]} -eq 51 ]; then
-        		sed -e "s/HERE_GOES_YOUR_MASTERNODE_KEY_FOR_MASTERNODE_XXX_GIT_PROJECT_XXX_XXX_NUM_XXX/${PRIVKEY[${NUM}]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
-          	else
-            		echo "input private key ${PRIVKEY[${NUM}]} was invalid. Please check the key, and restart this script."
-            		rm -r /etc/masternodes
-            		exit 1
-          	fi
-        else :
-        fi
+  if [ -n "${PRIVKEY[${NUM}]}" ]; then
+  	if [ ${#PRIVKEY[${NUM}]} -eq 51 ]; then
+  		sed -e "s/HERE_GOES_YOUR_MASTERNODE_KEY_FOR_MASTERNODE_XXX_GIT_PROJECT_XXX_XXX_NUM_XXX/${PRIVKEY[${NUM}]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+    	else
+      		echo "input private key ${PRIVKEY[${NUM}]} was invalid. Please check the key, and restart this script."
+      		rm -r /etc/masternodes
+      		exit 1
+    	fi
+  else :
+  fi
         sed -e "s/XXX_GIT_PROJECT_XXX/${CODENAME}/" -e "s/XXX_NUM_XXY/${NUM}]/" -e "s/XXX_NUM_XXX/${NUM}/" -e "s/XXX_PASS_XXX/${PASS}/" -e "s/XXX_IPV6_INT_BASE_XXX/[${IPV6_INT_BASE}/" -e "s/XXX_NETWORK_BASE_TAG_XXX/${NETWORK_BASE_TAG}/" -e "s/XXX_MNODE_INBOUND_PORT_XXX/${MNODE_INBOUND_PORT}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
 	if [ -z "${PRIVKEY[${NUM}]}" ]; then
 		if [ "$startnodes" -eq 1 ]; then
@@ -340,7 +340,7 @@ function create_mn_configuration() {
 			sed 's/\(^.*masternode\(\|privkey\)=.*$\)/#\1/' -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
 		fi
 	fi
-        done
+  done
 }
 
 #
