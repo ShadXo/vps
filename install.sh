@@ -286,27 +286,27 @@ function validate_netchoice() {
 #
 function create_mn_configuration() {
 
-        # always return to the script root
-        cd ${SCRIPTPATH}
-        for NUM in $(seq 1 ${count}); do
-          if [ -n "${PRIVKEY[${NUM}]}" ]; then
-            echo ${PRIVKEY[${NUM}]} >> tmp.txt
-          fi
-        done
-        if [ -f tmp.txt ]; then
-            dup=$(sort -t 8 tmp.txt | uniq -c | sort -nr | head -1 | awk '{print substr($0, 7, 1)}')
-            if [ 1 -ne "$dup" ]; then
-                echo "Private key was duplicated. Please restart this script."
-                rm -r /etc/masternodes
-                rm tmp.txt
-                exit 1
-            fi
-            rm tmp.txt
-        fi
+  # always return to the script root
+  cd ${SCRIPTPATH}
+  for NUM in $(seq 1 ${count}); do
+    if [ -n "${PRIVKEY[${NUM}]}" ]; then
+      echo ${PRIVKEY[${NUM}]} >> tmp.txt
+    fi
+  done
+  if [ -f tmp.txt ]; then
+      dup=$(sort -t 8 tmp.txt | uniq -c | sort -nr | head -1 | awk '{print substr($0, 7, 1)}')
+      if [ 1 -ne "$dup" ]; then
+          echo "Private key was duplicated. Please restart this script."
+          rm -r /etc/masternodes
+          rm tmp.txt
+          exit 1
+      fi
+      rm tmp.txt
+  fi
 
-        # create one config file per masternode
-        for NUM in $(seq 1 ${count}); do
-        PASS=$(date | md5sum | cut -c1-24)
+  # create one config file per masternode
+  for NUM in $(seq 1 ${count}); do
+  PASS=$(date | md5sum | cut -c1-24)
 
 	# we dont want to overwrite an existing config file
 	if [ ! -f ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf ]; then
@@ -433,7 +433,7 @@ function generate_privkey() {
 
     echo "* Generating private key"
 	  echo -e "rpcuser=test\nrpcpassword=passtest" >> ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
-  	#mkdir -p ${MNODE_DATA_BASE}/${CODENAME}_test
+  	mkdir -p ${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
   	dogecashd -daemon -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
   	sleep 5
 
@@ -444,7 +444,7 @@ function generate_privkey() {
   	done
   	dogecash-cli -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM} stop
   	sleep 5
-  	#rm -r ${MNODE_CONF_BASE}/${CODENAME}_test.conf ${MNODE_DATA_BASE}/${CODENAME}_test
+  	rm -r ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf ${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
 }
 
 #
