@@ -424,19 +424,19 @@ function wipe_all() {
 #Generate masternode private key
 #
 function generate_privkey() {
-	echo -e "rpcuser=test\nrpcpassword=passtest" >> ${MNODE_CONF_BASE}/${CODENAME}_test.conf
-  	mkdir -p ${MNODE_DATA_BASE}/${CODENAME}_test
-  	dogecashd -daemon -conf=${MNODE_CONF_BASE}/${CODENAME}_test.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_test
+	#echo -e "rpcuser=test\nrpcpassword=passtest" >> ${MNODE_CONF_BASE}/${CODENAME}_test.conf
+  	#mkdir -p ${MNODE_DATA_BASE}/${CODENAME}_test
+  	dogecashd -daemon -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
   	sleep 5
   	
 	for NUM in $(seq 1 ${count}); do
     		if [ -z "${PRIVKEY[${NUM}]}" ]; then
-    			PRIVKEY[${NUM}]=$(dogecash-cli -conf=${MNODE_CONF_BASE}/${CODENAME}_test.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_test masternode genkey)
+    			PRIVKEY[${NUM}]=$(dogecash-cli -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM} masternode genkey)
     		fi
   	done
-  	dogecash-cli -conf=${MNODE_CONF_BASE}/${CODENAME}_test.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_test stop
+  	dogecash-cli -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM} stop
   	sleep 5
-  	rm -r ${MNODE_CONF_BASE}/${CODENAME}_test.conf ${MNODE_DATA_BASE}/${CODENAME}_test
+  	#rm -r ${MNODE_CONF_BASE}/${CODENAME}_test.conf ${MNODE_DATA_BASE}/${CODENAME}_test
 }
 
 #
