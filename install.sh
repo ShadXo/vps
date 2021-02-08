@@ -31,6 +31,7 @@ declare -r SCRIPT_VERSION="v0.9.5"
 declare -r SCRIPT_LOGFILE="/tmp/nodemaster_${DATE_STAMP}_out.log"
 declare -r IPV4_DOC_LINK="https://www.vultr.com/docs/add-secondary-ipv4-address"
 declare -r DO_NET_CONF="/etc/network/interfaces.d/50-cloud-init.cfg"
+declare -r NETWORK_BASE_TAG="$(dd if=/dev/urandom bs=2 count=1 2>/dev/null | od -x -A n | sed -e 's/^[[:space:]]*//g')"
 
 function showbanner() {
 cat << "EOF"
@@ -81,8 +82,8 @@ function show_help(){
     echo "-w or --wipe: Wipe ALL local data for a node type. Combine with the -p option";
     echo "-u or --update: Update a specific masternode daemon. Combine with the -p option";
     echo "-r or --release: Release version to be installed.";
-	echo "-x or --startnodes: Start masternodes after installation to sync with blockchain";
-	echo "-i or --download: Download masternode daemon instead of building it";
+    echo "-x or --startnodes: Start masternodes after installation to sync with blockchain";
+    echo "-i or --download: Download masternode daemon instead of building it";
     exit 1;
 }
 
@@ -95,7 +96,7 @@ function check_distro() {
 		. /etc/os-release
 
         if [[ "${ID}" == "ubuntu" ]]; then
-            if [[ "${VERSION_ID}" == "16.04" ]]; then
+            if [[ "${VERSION_ID}" != "16.04" ]] && [[ "${VERSION_ID}" != "18.04" ]]; then
 		        return;
             fi
 
@@ -108,11 +109,11 @@ function check_distro() {
             fi
 		fi
 
-		echo "This script only supports Ubuntu 16.04 LTS or Ubuntu 18.04 / 20.04 LTS with --download option."
+		echo "This script only supports Ubuntu 16.04 LTS and Ubuntu 18.04 or 20.04 LTS with --download option."
 		exit 1
 	else
 		# no, thats not ok!
-		echo "This script only supports ubuntu 16.04 LTS or 18.04 / 20.04 LTS with --download option, exiting."
+		echo "This script only supports ubuntu 16.04 LTS and 18.04 or 20.04 LTS with --download option, exiting."
 		exit 1
 	fi
 }
@@ -121,16 +122,21 @@ function check_distro() {
 # /* no parameters, installs the base set of packages that are required for all projects */
 #
 function install_packages() {
-	# development and build packages
-	# these are common on all cryptos
-	echo "* Package installation!"
-	apt-get -qq -o=Dpkg::Use-Pty=0 -o=Acquire::ForceIPv4=true update
-	apt-get -qqy -o=Dpkg::Use-Pty=0 -o=Acquire::ForceIPv4=true install build-essential g++ \
-	protobuf-compiler libboost-all-dev autotools-dev \
-    automake libcurl4-openssl-dev libboost-all-dev libssl-dev libdb++-dev \
-    make autoconf automake libtool git apt-utils libprotobuf-dev pkg-config \
-    libcurl3-dev libudev-dev libqrencode-dev bsdmainutils pkg-config libssl-dev \
-    libgmp3-dev libevent-dev jp2a pv virtualenv	&>> ${SCRIPT_LOGFILE}
+    # development and build packages
+    # these are common on all cryptos
+    echo "* Package installation!"
+    add-apt-repository -yu ppa:bitcoin/bitcoin  &>> ${SCRIPT_LOGFILE}
+    apt-get -qq -o=Dpkg::Use-Pty=0 -o=Acquire::ForceIPv4=true update  &>> ${SCRIPT_LOGFILE}
+    apt-get -qqy -o=Dpkg::Use-Pty=0 -o=Acquire::ForceIPv4=true install build-essential \
+    libcurl4-gnutls-dev protobuf-compiler libboost-all-dev autotools-dev automake \
+    libboost-all-dev libssl-dev make autoconf libtool git apt-utils g++ \
+    libprotobuf-dev pkg-config libudev-dev libqrencode-dev bsdmainutils \
+    pkg-config libgmp3-dev libevent-dev jp2a pv virtualenv libdb4.8-dev libdb4.8++-dev  &>> ${SCRIPT_LOGFILE}
+    
+    # only for 18.04 // openssl
+    if [[ "${VERSION_ID}" == "18.04" ]] ; then
+       apt-get -qqy -o=Dpkg::Use-Pty=0 -o=Acquire::ForceIPv4=true install libssl1.0-dev
+    fi
 }
 
 #
@@ -141,6 +147,7 @@ function swaphack() {
 if [ $(free | awk '/^Swap:/ {exit !$2}') ] || [ ! -f "/var/mnode_swap.img" ];then
 	echo "* No proper swap, creating it"
 	# needed because ant servers are ants
+	MNODE_SWAPSIZE=2048
 	rm -f /var/mnode_swap.img
 	dd if=/dev/zero of=/var/mnode_swap.img bs=1024k count=${MNODE_SWAPSIZE} &>> ${SCRIPT_LOGFILE}
 	chmod 0600 /var/mnode_swap.img
@@ -440,8 +447,8 @@ function generate_privkey() {
 #
 function cleanup_after() {
 
-	apt-get -qqy -o=Dpkg::Use-Pty=0 --force-yes autoremove
-	apt-get -qqy -o=Dpkg::Use-Pty=0 --force-yes autoclean
+	#apt-get -qqy -o=Dpkg::Use-Pty=0 --force-yes autoremove
+	apt-get -qqy -o=Dpkg::Use-Pty=0 --allow-downgrades --allow-change-held-packages autoclean
 
 	echo "kernel.randomize_va_space=1" > /etc/sysctl.conf  &>> ${SCRIPT_LOGFILE}
 	echo "net.ipv4.conf.all.rp_filter=1" >> /etc/sysctl.conf &>> ${SCRIPT_LOGFILE}
@@ -654,34 +661,42 @@ function download_bin_from_url() {
 # /* no parameters, print some (hopefully) helpful advice  */
 #
 function final_call() {
-	# note outstanding tasks that need manual work
+    # note outstanding tasks that need manual work
     echo "************! ALMOST DONE !******************************"
-	echo "There is still work to do in the configuration templates."
-	echo "These are located at ${MNODE_CONF_BASE}, one per masternode."
-	echo "Add your masternode private keys now."
-	echo "eg in /etc/masternodes/${CODENAME}_n1.conf"
-	echo ""
-    echo "=> All configuration files are in: ${MNODE_CONF_BASE}"
-    echo "=> All Data directories are in: ${MNODE_DATA_BASE}"
-	echo ""
-	echo "last but not least, run /usr/local/bin/activate_masternodes_${CODENAME} as root to activate your nodes."
+    if [ "$update" -eq 0 ]; then
+        echo "There is still work to do in the configuration templates."
+        echo "These are located at ${MNODE_CONF_BASE}, one per masternode."
+        echo "Add your masternode private keys now."
+        echo "eg in /etc/masternodes/${CODENAME}_n1.conf"
+    else
+        echo "Your ${CODENAME} masternode daemon has been updated! (but not yet activated)"
+    fi
+    echo ""
+    echo "=> $(tput bold)$(tput setaf 2) All configuration files are in: ${MNODE_CONF_BASE} $(tput sgr0)"
+    echo "=> $(tput bold)$(tput setaf 2) All Data directories are in: ${MNODE_DATA_BASE} $(tput sgr0)"
+    echo ""
+    echo "$(tput bold)$(tput setaf 1)Important:$(tput sgr0) run $(tput setaf 2) /usr/local/bin/activate_masternodes_${CODENAME} $(tput sgr0) as root to activate your nodes."
 
-    # place future helper script accordingly
-    cp ${SCRIPTPATH}/scripts/activate_masternodes.sh ${MNODE_HELPER}_${CODENAME}
-	echo "">> ${MNODE_HELPER}_${CODENAME}
+    # place future helper script accordingly on fresh install
+    if [ "$update" -eq 0 ]; then
+        cp ${SCRIPTPATH}/scripts/activate_masternodes.sh ${MNODE_HELPER}_${CODENAME}
+        echo "">> ${MNODE_HELPER}_${CODENAME}
 
-	for NUM in $(seq 1 ${count}); do
-		echo "systemctl enable ${CODENAME}_n${NUM}" >> ${MNODE_HELPER}_${CODENAME}
-		echo "systemctl restart ${CODENAME}_n${NUM}" >> ${MNODE_HELPER}_${CODENAME}
-	done
+        for NUM in $(seq 1 ${count}); do
+            echo "systemctl daemon-reload" >> ${MNODE_HELPER}_${CODENAME}
+            echo "systemctl enable ${CODENAME}_n${NUM}" >> ${MNODE_HELPER}_${CODENAME}
+            echo "systemctl restart ${CODENAME}_n${NUM}" >> ${MNODE_HELPER}_${CODENAME}
+        done
 
-	chmod u+x ${MNODE_HELPER}_${CODENAME}
-	if [ "$startnodes" -eq 1 ]; then
-		echo ""
-		echo "** Your nodes are starting up. If you haven't set masternode private key, Don't forget to change the masternodeprivkey later."
-		${MNODE_HELPER}_${CODENAME}
-	fi
-	tput sgr0
+        chmod u+x ${MNODE_HELPER}_${CODENAME}
+    fi
+
+    if [ "$startnodes" -eq 1 ]; then
+        echo ""
+        echo "** Your nodes are starting up. Don't forget to change the masternodeprivkey later."
+        ${MNODE_HELPER}_${CODENAME}
+    fi
+    tput sgr0
 }
 
 #
