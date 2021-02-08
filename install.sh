@@ -426,15 +426,15 @@ function wipe_all() {
 function generate_privkey() {
 	echo -e "rpcuser=test\nrpcpassword=passtest" >> ${MNODE_CONF_BASE}/${CODENAME}_test.conf
   	mkdir -p ${MNODE_DATA_BASE}/${CODENAME}_test
-  	phored -daemon -conf=${MNODE_CONF_BASE}/${CODENAME}_test.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_test
+  	dogecashd -daemon -conf=${MNODE_CONF_BASE}/${CODENAME}_test.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_test
   	sleep 5
   	
 	for NUM in $(seq 1 ${count}); do
     		if [ -z "${PRIVKEY[${NUM}]}" ]; then
-    			PRIVKEY[${NUM}]=$(phore-cli -conf=${MNODE_CONF_BASE}/${CODENAME}_test.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_test masternode genkey)
+    			PRIVKEY[${NUM}]=$(dogecash-cli -conf=${MNODE_CONF_BASE}/${CODENAME}_test.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_test masternode genkey)
     		fi
   	done
-  	phore-cli -conf=${MNODE_CONF_BASE}/${CODENAME}_test.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_test stop
+  	dogecash-cli -conf=${MNODE_CONF_BASE}/${CODENAME}_test.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_test stop
   	sleep 5
   	rm -r ${MNODE_CONF_BASE}/${CODENAME}_test.conf ${MNODE_DATA_BASE}/${CODENAME}_test
 }
@@ -653,7 +653,7 @@ function download_bin_from_url() {
     mkdir binaries &>>                                            ${SCRIPT_LOGFILE}
     tar -xzf binaries.tar.gz -C binaries --strip-components=1 &>> ${SCRIPT_LOGFILE}
     cp ./binaries/bin/* /usr/local/bin/ &>>                       ${SCRIPT_LOGFILE}
-    MNODE_DAEMON="/usr/local/bin/phored"
+    MNODE_DAEMON="/usr/local/bin/dogecashd"
     echo "MNODE_DAEMON set to ${MNODE_DAEMON}" &>>                ${SCRIPT_LOGFILE}
 }
 
