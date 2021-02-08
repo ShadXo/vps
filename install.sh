@@ -185,9 +185,9 @@ function create_mn_dirs() {
     echo "* Creating masternode directories"
     mkdir -p ${MNODE_CONF_BASE}
 	for NUM in $(seq 1 ${count}); do
-	    if [ ! -d "${MNODE_DATA_BASE}/${CODENAME}${NUM}" ]; then
-	         echo "creating data directory ${MNODE_DATA_BASE}/${CODENAME}${NUM}" &>> ${SCRIPT_LOGFILE}
-             mkdir -p ${MNODE_DATA_BASE}/${CODENAME}${NUM} &>> ${SCRIPT_LOGFILE}
+	    if [ ! -d "${MNODE_DATA_BASE}/${CODENAME}_n${NUM}" ]; then
+	         echo "creating data directory ${MNODE_DATA_BASE}/${CODENAME}_n${NUM}" &>> ${SCRIPT_LOGFILE}
+             mkdir -p ${MNODE_DATA_BASE}/${CODENAME}_n${NUM} &>> ${SCRIPT_LOGFILE}
         fi
 	done
 
@@ -217,20 +217,20 @@ function create_sentinel_setup() {
 
     # create one sentinel config file per masternode
 	for NUM in $(seq 1 ${count}); do
-	    if [ ! -f "/usr/share/sentinel/${CODENAME}${NUM}_sentinel.conf" ]; then
+	    if [ ! -f "/usr/share/sentinel/${CODENAME}_n${NUM}_sentinel.conf" ]; then
 	         echo "* Creating sentinel configuration for ${CODENAME} masternode number ${NUM}" &>> ${SCRIPT_LOGFILE}
-		     echo "dash_conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf"   > /usr/share/sentinel/${CODENAME}${NUM}_sentinel.conf
-             echo "network=mainnet"                                         >> /usr/share/sentinel/${CODENAME}${NUM}_sentinel.conf
-             echo "db_name=database/${CODENAME}_${NUM}_sentinel.db"         >> /usr/share/sentinel/${CODENAME}${NUM}_sentinel.conf
-             echo "db_driver=sqlite"                                        >> /usr/share/sentinel/${CODENAME}${NUM}_sentinel.conf
+		     echo "dash_conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf"   > /usr/share/sentinel/${CODENAME}_n${NUM}_sentinel.conf
+             echo "network=mainnet"                                         >> /usr/share/sentinel/${CODENAME}_n${NUM}_sentinel.conf
+             echo "db_name=database/${CODENAME}_${NUM}_sentinel.db"         >> /usr/share/sentinel/${CODENAME}_n${NUM}_sentinel.conf
+             echo "db_driver=sqlite"                                        >> /usr/share/sentinel/${CODENAME}_n${NUM}_sentinel.conf
         fi
 	done
 
     echo "Generated a Sentinel config for you. To activate Sentinel run"
-    echo "export SENTINEL_CONFIG=${MNODE_CONF_BASE}/${CODENAME}${NUM}_sentinel.conf; /usr/share/sentinelvenv/bin/python /usr/share/sentinel/bin/sentinel.py"
+    echo "export SENTINEL_CONFIG=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}_sentinel.conf; /usr/share/sentinelvenv/bin/python /usr/share/sentinel/bin/sentinel.py"
     echo ""
     echo "If it works, add the command as cronjob:  "
-    echo "* * * * * export SENTINEL_CONFIG=${MNODE_CONF_BASE}/${CODENAME}${NUM}_sentinel.conf; /usr/share/sentinelvenv/bin/python /usr/share/sentinel/bin/sentinel.py 2>&1 >> /var/log/sentinel/sentinel-cron.log"
+    echo "* * * * * export SENTINEL_CONFIG=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}_sentinel.conf; /usr/share/sentinelvenv/bin/python /usr/share/sentinel/bin/sentinel.py 2>&1 >> /var/log/sentinel/sentinel-cron.log"
 
 }
 
@@ -374,9 +374,9 @@ function create_systemd_configuration() {
 			Group=${MNODE_USER}
 
 			Type=forking
-			PIDFile=${MNODE_DATA_BASE}/${CODENAME}${NUM}/${CODENAME}.pid
-			ExecStart=${MNODE_DAEMON} -daemon -pid=${MNODE_DATA_BASE}/${CODENAME}${NUM}/${CODENAME}.pid \
-			-conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}${NUM}
+			PIDFile=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}/${CODENAME}.pid
+			ExecStart=${MNODE_DAEMON} -daemon -pid=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}/${CODENAME}.pid \
+			-conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
 
 			Restart=always
 			RestartSec=5
