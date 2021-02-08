@@ -5,8 +5,8 @@
 #  ██║╚██╗██║██║   ██║██║  ██║██╔══╝  ██║╚██╔╝██║██╔══██║╚════██║   ██║   ██╔══╝  ██╔══██╗
 #  ██║ ╚████║╚██████╔╝██████╔╝███████╗██║ ╚═╝ ██║██║  ██║███████║   ██║   ███████╗██║  ██║
 #  ╚═╝  ╚═══╝ ╚═════╝ ╚═════╝ ╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝   ╚═╝   ╚══════╝╚═╝  ╚═╝
-#                                                              ╚╗ @marsmensch 2016-2018 ╔╝                   				
-#                   
+#                                                              ╚╗ @marsmensch 2016-2018 ╔╝
+#
 # version 	v0.9.4
 # date    	2018-04-04
 #
@@ -132,7 +132,7 @@ function install_packages() {
     libboost-all-dev libssl-dev make autoconf libtool git apt-utils g++ \
     libprotobuf-dev pkg-config libudev-dev libqrencode-dev bsdmainutils \
     pkg-config libgmp3-dev libevent-dev jp2a pv virtualenv libdb4.8-dev libdb4.8++-dev  &>> ${SCRIPT_LOGFILE}
-    
+
     # only for 18.04 // openssl
     if [[ "${VERSION_ID}" == "18.04" ]] ; then
        apt-get -qqy -o=Dpkg::Use-Pty=0 -o=Acquire::ForceIPv4=true install libssl1.0-dev
@@ -198,40 +198,45 @@ function create_mn_dirs() {
 #
 function create_sentinel_setup() {
 
+	SENTINEL_BASE=/usr/share/sentinel
+	SENTINEL_ENV=/usr/share/sentinelenv
+
 	# if code directory does not exists, we create it clone the src
-	if [ ! -d /usr/share/sentinel ]; then
+	if [ ! -d ${SENTINEL_BASE} ]; then
 		cd /usr/share                                               &>> ${SCRIPT_LOGFILE}
 		git clone https://github.com/dashpay/sentinel.git sentinel  &>> ${SCRIPT_LOGFILE}
 		cd sentinel                                                 &>> ${SCRIPT_LOGFILE}
 		rm -f rm sentinel.conf                                      &>> ${SCRIPT_LOGFILE}
 	else
 		echo "* Updating the existing sentinel GIT repo"
-		cd /usr/share/sentinel        &>> ${SCRIPT_LOGFILE}
+		cd ${SENTINEL_BASE}           &>> ${SCRIPT_LOGFILE}
 		git pull                      &>> ${SCRIPT_LOGFILE}
 		rm -f rm sentinel.conf        &>> ${SCRIPT_LOGFILE}
 	fi
 
 	# create a globally accessible venv and install sentinel requirements
-	virtualenv --system-site-packages /usr/share/sentinelvenv      &>> ${SCRIPT_LOGFILE}
-	/usr/share/sentinelvenv/bin/pip install -r requirements.txt    &>> ${SCRIPT_LOGFILE}
+	virtualenv --system-site-packages ${SENTINEL_ENV}      &>> ${SCRIPT_LOGFILE}
+	${SENTINEL_ENV}/bin/pip install -r requirements.txt    &>> ${SCRIPT_LOGFILE}
 
     # create one sentinel config file per masternode
 	for NUM in $(seq 1 ${count}); do
-	    if [ ! -f "/usr/share/sentinel/${CODENAME}_n${NUM}_sentinel.conf" ]; then
+	    if [ ! -f "${SENTINEL_BASE}/${CODENAME}${NUM}_sentinel.conf" ]; then
 	         echo "* Creating sentinel configuration for ${CODENAME} masternode number ${NUM}" &>> ${SCRIPT_LOGFILE}
-		     echo "dash_conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf"   > /usr/share/sentinel/${CODENAME}_n${NUM}_sentinel.conf
-             echo "network=mainnet"                                         >> /usr/share/sentinel/${CODENAME}_n${NUM}_sentinel.conf
-             echo "db_name=database/${CODENAME}_${NUM}_sentinel.db"         >> /usr/share/sentinel/${CODENAME}_n${NUM}_sentinel.conf
-             echo "db_driver=sqlite"                                        >> /usr/share/sentinel/${CODENAME}_n${NUM}_sentinel.conf
+		     echo "dash_conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf"            > ${SENTINEL_BASE}/${CODENAME}${NUM}_sentinel.conf
+             echo "network=mainnet"                                                  >> ${SENTINEL_BASE}/${CODENAME}${NUM}_sentinel.conf
+             echo "db_name=${SENTINEL_BASE}/database/${CODENAME}_${NUM}_sentinel.db" >> ${SENTINEL_BASE}/${CODENAME}${NUM}_sentinel.conf
+             echo "db_driver=sqlite"                                                 >> ${SENTINEL_BASE}/${CODENAME}${NUM}_sentinel.conf
         fi
-	done
+    done
 
-    echo "Generated a Sentinel config for you. To activate Sentinel run"
-    echo "export SENTINEL_CONFIG=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}_sentinel.conf; /usr/share/sentinelvenv/bin/python /usr/share/sentinel/bin/sentinel.py"
+    export SENTINEL_CONFIG=${SENTINEL_BASE}/${CODENAME}${NUM}_sentinel.conf; cd ${SENTINEL_BASE} && ${SENTINEL_ENV}/bin/python ${SENTINEL_BASE}/bin/sentinel.py
+
+
+    echo "$(tput sgr0)$(tput setaf 3)Generated a Sentinel config for you. To activate Sentinel run:$(tput sgr0)"
+    echo "$(tput sgr0)$(tput setaf 2)export SENTINEL_CONFIG=${SENTINEL_BASE}/${CODENAME}${NUM}_sentinel.conf; cd ${SENTINEL_BASE} && ${SENTINEL_ENV}/bin/python ${SENTINEL_BASE}/bin/sentinel.py$(tput sgr0)"
     echo ""
-    echo "If it works, add the command as cronjob:  "
-    echo "* * * * * export SENTINEL_CONFIG=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}_sentinel.conf; /usr/share/sentinelvenv/bin/python /usr/share/sentinel/bin/sentinel.py 2>&1 >> /var/log/sentinel/sentinel-cron.log"
-
+    echo "$(tput sgr0)$(tput setaf 2)If it works, add the command as cronjob:  $(tput sgr0)"
+    echo "$(tput sgr0)$(tput setaf 2)* * * * * export SENTINEL_CONFIG=${SENTINEL_BASE}/${CODENAME}${NUM}_sentinel.conf; cd ${SENTINEL_BASE} && ${SENTINEL_ENV}/bin/python ${SENTINEL_BASE}/bin/sentinel.py >> /var/log/sentinel/sentinel-cron.log$(tput sgr0) 2>&1"
 }
 
 #
@@ -317,7 +322,7 @@ function create_mn_configuration() {
 		# replace placeholders
 		echo "running sed on file ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf"                                &>> ${SCRIPT_LOGFILE}
 	fi
-	
+
         if [ -n "${PRIVKEY[${NUM}]}" ]; then
         	if [ ${#PRIVKEY[${NUM}]} -eq 51 ]; then
         		sed -e "s/HERE_GOES_YOUR_MASTERNODE_KEY_FOR_MASTERNODE_XXX_GIT_PROJECT_XXX_XXX_NUM_XXX/${PRIVKEY[${NUM}]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
@@ -399,9 +404,10 @@ function create_systemd_configuration() {
 function set_permissions() {
 
 	# maybe add a sudoers entry later
-	chown -R ${MNODE_USER}:${MNODE_USER} ${MNODE_CONF_BASE} ${MNODE_DATA_BASE} /var/log/sentinel &>> ${SCRIPT_LOGFILE}
-	# make group permissions same as user, so vps-user can be added to masternode group
-	chmod -R g=u ${MNODE_CONF_BASE} ${MNODE_DATA_BASE} /var/log/sentinel &>> ${SCRIPT_LOGFILE}
+	mkdir -p /var/log/sentinel &>> ${SCRIPT_LOGFILE}
+	chown -R ${MNODE_USER}:${MNODE_USER} ${MNODE_CONF_BASE} ${MNODE_DATA_BASE} /var/log/sentinel ${SENTINEL_BASE}/database &>> ${SCRIPT_LOGFILE}
+  # make group permissions same as user, so vps-user can be added to masternode group
+  chmod -R g=u ${MNODE_CONF_BASE} ${MNODE_DATA_BASE} /var/log/sentinel &>> ${SCRIPT_LOGFILE}
 
 }
 
@@ -410,13 +416,13 @@ function set_permissions() {
 #
 function wipe_all() {
 
-    	echo "Deleting all ${project} related data!"
-	rm -f /etc/masternodes/${project}_n*.conf
-	rmdir --ignore-fail-on-non-empty -p /var/lib/masternodes/${project}*
-	rm -f /etc/systemd/system/${project}_n*.service
-	rm -f ${MNODE_DAEMON}
-	echo "DONE!"
-	exit 0
+    echo "Deleting all ${project} related data!"
+    rm -f /etc/masternodes/${project}_n*.conf
+    rmdir --ignore-fail-on-non-empty -p /var/lib/masternodes/${project}*
+    rm -f /etc/systemd/system/${project}_n*.service
+    rm -f ${MNODE_DAEMON}
+    echo "DONE!"
+    exit 0
 
 }
 
@@ -430,7 +436,7 @@ function generate_privkey() {
   	#mkdir -p ${MNODE_DATA_BASE}/${CODENAME}_test
   	dogecashd -daemon -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
   	sleep 5
-  	
+
 	for NUM in $(seq 1 ${count}); do
     		if [ -z "${PRIVKEY[${NUM}]}" ]; then
     			PRIVKEY[${NUM}]=$(dogecash-cli -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM} masternode genkey)
@@ -509,99 +515,121 @@ function source_config() {
 			echo "net EMPTY, setting to default: ${NETWORK_TYPE}" &>> ${SCRIPT_LOGFILE}
 		fi
 
-		# main block of function logic starts here
-	    	# if update flag was given, delete the old daemon binary first & proceed
-		if [ "$update" -eq 1 ]; then
-			echo "update given, deleting the old daemon NOW!" &>> ${SCRIPT_LOGFILE}
-			rm -f ${MNODE_DAEMON}
-		fi
+    # main block of function logic starts here
+    # if update flag was given, check if all required mn-helper files exist
+    if [ "$update" -eq 1 ]; then
+        if [ ! -f ${MNODE_DAEMON} ]; then
+            echo "UPDATE FAILED! Daemon hasn't been found. Please try the normal installation process by omitting the upgrade parameter."
+            exit 1
+        fi
+        if [ ! -f ${MNODE_HELPER}_${CODENAME} ]; then
+            echo "UPDATE FAILED! Masternode activation file ${MNODE_HELPER}_${CODENAME} hasn't been found. Please try the normal installation process by omitting the upgrade parameter."
+            exit 1
+        fi
+        if [ ! -d ${MNODE_DATA_BASE} ]; then
+            echo "UPDATE FAILED! ${MNODE_DATA_BASE} hasn't been found. Please try the normal installation process by omitting the upgrade parameter."
+            exit 1
+        fi
+    fi
 
-		echo "************************* Installation Plan *****************************************"
-		echo ""
-		echo "I am going to install and configure "
-       		echo "=> ${count} ${project} masternode(s) in version ${release}"
-        	echo "for you now."
-        	echo ""
-		echo "You have to add your masternode private key to the individual config files afterwards"
-		echo ""
-		echo "Stay tuned!"
-        	echo ""
-		# show a hint for MANUAL IPv4 configuration
-		if [ "${net}" -eq 4 ]; then
-			NETWORK_TYPE=4
-			echo "WARNING:"
-			echo "You selected IPv4 for networking but there is no automatic workflow for this part."
-			echo "This means you will have some mamual work to do to after this configuration run."
-			echo ""
-			echo "See the following link for instructions how to add multiple ipv4 addresses on vultr:"
-			echo "${IPV4_DOC_LINK}"
-		fi
-		# sentinel setup
-		if [ "$sentinel" -eq 1 ]; then
-			echo "I will also generate a Sentinel configuration for you."
-		fi
-		# start nodes after setup
-		if [ "$startnodes" -eq 1 ]; then
-			echo "I will start your masternodes after the installation."
-		fi
-		echo ""
-		echo "A logfile for this run can be found at the following location:"
-		echo "${SCRIPT_LOGFILE}"
-		echo ""
-		echo "*************************************************************************************"
-		sleep 5
+    echo "************************* Installation Plan *****************************************"
+    echo ""
+    if [ "$update" -eq 1 ]; then
+        echo "I am going to update your existing "
+        echo "$(tput bold)$(tput setaf 2) => ${project} masternode(s) in version ${release} $(tput sgr0)"
+    else
+        echo "I am going to install and configure "
+        echo "$(tput bold)$(tput setaf 2) => ${count} ${project} masternode(s) in version ${release} $(tput sgr0)"
+    fi
+    echo "for you now."
+    echo ""
+    if [ "$update" -eq 0 ]; then
+        # only needed if fresh installation
+        echo "You have to add your masternode private key to the individual config files afterwards"
+        echo ""
+    fi
+    echo "Stay tuned!"
+    echo ""
+    # show a hint for MANUAL IPv4 configuration
+    if [ "${net}" -eq 4 ]; then
+        NETWORK_TYPE=4
+        echo "WARNING:"
+        echo "You selected IPv4 for networking but there is no automatic workflow for this part."
+        echo "This means you will have some mamual work to do to after this configuration run."
+        echo ""
+        echo "See the following link for instructions how to add multiple ipv4 addresses on vultr:"
+        echo "${IPV4_DOC_LINK}"
+    fi
+    # sentinel setup
+    if [ "$sentinel" -eq 1 ]; then
+        echo "I will also generate a Sentinel configuration for you."
+    fi
+    # start nodes after setup
+    if [ "$startnodes" -eq 1 ]; then
+        echo "I will start your masternodes after the installation."
+    fi
+    echo ""
+    echo "A logfile for this run can be found at the following location:"
+    echo "${SCRIPT_LOGFILE}"
+    echo ""
+    echo "*************************************************************************************"
+    sleep 5
 
 		# main routine
 		print_logo
+    if [ "$update" -eq 0 ]; then
         prepare_mn_interfaces
         swaphack
-
-        if [[ "$download" -eq 1 ]]; then
-            echo "Download binary from url" &>> ${SCRIPT_LOGFILE}
-            download_bin_from_url
+    fi
+    if [[ "$download" -eq 1 ]]; then
+      echo "Download binary from url" &>> ${SCRIPT_LOGFILE}
+      download_bin_from_url
 		else
-		    install_packages
-		    echo "Configured to build mn from source" &>> ${SCRIPT_LOGFILE}
+      install_packages
+		  echo "Configured to build mn from source" &>> ${SCRIPT_LOGFILE}
 			build_mn_from_source
 		fi
-		create_mn_user
-		create_mn_dirs
-	
-    	# private key initialize
-    	if [ "$generate" -eq 1 ]; then
+    if [ "$update" -eq 0 ]; then
+        create_mn_user
+        create_mn_dirs
+        # sentinel setup
+        if [ "$sentinel" -eq 1 ]; then
+            echo "* Sentinel setup chosen" &>> ${SCRIPT_LOGFILE}
+            create_sentinel_setup
+        fi
+        # private key initialize
+        if [ "$generate" -eq 1 ]; then
       	    echo "Generating masternode private key" &>> ${SCRIPT_LOGFILE}
       	    generate_privkey
-		fi
-	
-		# sentinel setup
-		if [ "$sentinel" -eq 1 ]; then
-			echo "* Sentinel setup chosen" &>> ${SCRIPT_LOGFILE}
-			create_sentinel_setup
-		fi
-	
-		configure_firewall
-		create_mn_configuration
-		create_control_configuration
-		create_systemd_configuration
-		set_permissions
-		cleanup_after
-		showbanner
-		final_call
-	else
-		echo "required file ${SETUP_CONF_FILE} does not exist, abort!"
-		exit 1
-	fi
-
+        fi
+        configure_firewall
+        create_mn_configuration
+        create_control_configuration
+        create_systemd_configuration
+    fi
+    set_permissions
+    cleanup_after
+    showbanner
+    final_call
+    #if [ "$update" -eq 1 ]; then
+        # need to update the systemctl daemon, else an error will occur when running `systemctl enable` on a changed systemd process
+    #    systemctl daemon-reload
+    #fi
+  else
+      echo "required file ${SETUP_CONF_FILE} does not exist, abort!"
+      exit 1
+  fi
 }
 
 function print_logo() {
 
-	# print ascii banner if a logo exists
-	if [ -f "${SCRIPTPATH}/assets/$CODENAME.jpg" ]; then
-			jp2a -b --colors --width=56 ${SCRIPTPATH}/assets/${CODENAME}.jpg
-	else
-			jp2a -b --colors --width=56 ${SCRIPTPATH}/assets/default.jpg          
-	fi  
+    # print ascii banner if a logo exists
+    echo -e "* Starting the compilation process for ${CODENAME}, stay tuned"
+    if [ -f "${SCRIPTPATH}/assets/$CODENAME.jpg" ]; then
+            jp2a -b --colors --width=56 ${SCRIPTPATH}/assets/${CODENAME}.jpg
+    else
+            jp2a -b --colors --width=56 ${SCRIPTPATH}/assets/default.jpg
+    fi
 
 }
 
@@ -610,37 +638,39 @@ function print_logo() {
 #
 function build_mn_from_source() {
         # daemon not found compile it
-        if [ ! -f ${MNODE_DAEMON} ]; then
-                mkdir -p ${SCRIPTPATH}/${CODE_DIR} &>> ${SCRIPT_LOGFILE}
-                # if code directory does not exists, we create it clone the src
-                if [ ! -d ${SCRIPTPATH}/${CODE_DIR}/${CODENAME} ]; then
-                        mkdir -p ${CODE_DIR} && cd ${SCRIPTPATH}/${CODE_DIR} &>> ${SCRIPT_LOGFILE}
-                        git clone ${GIT_URL} ${CODENAME}          &>> ${SCRIPT_LOGFILE}
-                        cd ${SCRIPTPATH}/${CODE_DIR}/${CODENAME}  &>> ${SCRIPT_LOGFILE}
-                        echo "* Checking out desired GIT tag: ${release}"
-                        git checkout ${release}                   &>> ${SCRIPT_LOGFILE}
-                else
-                        echo "* Updating the existing GIT repo"
-                        cd ${SCRIPTPATH}/${CODE_DIR}/${CODENAME}  &>> ${SCRIPT_LOGFILE}
-                        git pull                                  &>> ${SCRIPT_LOGFILE}
-                        echo "* Checking out desired GIT tag: ${release}"
-                        git checkout ${release}                   &>> ${SCRIPT_LOGFILE}
+        if [ ! -f ${MNODE_DAEMON} ] || [ "$update" -eq 1 ]; then
+                # create code directory if it doesn't exist
+                if [ ! -d ${SCRIPTPATH}/${CODE_DIR} ]; then
+                    mkdir -p ${SCRIPTPATH}/${CODE_DIR}              &>> ${SCRIPT_LOGFILE}
+                fi
+                # if coin directory (CODENAME) exists, we remove it, to make a clean git clone
+                if [ -d ${SCRIPTPATH}/${CODE_DIR}/${CODENAME} ]; then
+                    echo "deleting ${SCRIPTPATH}/${CODE_DIR}/${CODENAME} for clean cloning" &>> ${SCRIPT_LOGFILE}
+                    rm -rf ${SCRIPTPATH}/${CODE_DIR}/${CODENAME}    &>> ${SCRIPT_LOGFILE}
+                fi
+                cd ${SCRIPTPATH}/${CODE_DIR}                        &>> ${SCRIPT_LOGFILE}
+                git clone ${GIT_URL} ${CODENAME}                    &>> ${SCRIPT_LOGFILE}
+                cd ${SCRIPTPATH}/${CODE_DIR}/${CODENAME}            &>> ${SCRIPT_LOGFILE}
+                echo "* Checking out desired GIT tag: ${release}"
+                git checkout ${release}                             &>> ${SCRIPT_LOGFILE}
+
+                if [ "$update" -eq 1 ]; then
+                    echo "update given, deleting the old daemon NOW!" &>> ${SCRIPT_LOGFILE}
+                    rm -f ${MNODE_DAEMON}
+                    # old daemon must be removed before compilation. Would be better to remove it afterwards, however not possible with current structure
+                    if [ -f ${MNODE_DAEMON} ]; then
+                            echo "UPDATE FAILED! Daemon ${MNODE_DAEMON} couldn't be removed. Please open an issue at https://github.com/masternodes/vps/issues. Thank you!"
+                            exit 1
+                    fi
                 fi
 
-                # print ascii banner if a logo exists
-                echo -e "* Starting the compilation process for ${CODENAME}, stay tuned"
-                if [ -f "${SCRIPTPATH}/assets/$CODENAME.jpg" ]; then
-                        jp2a -b --colors --width=56 ${SCRIPTPATH}/assets/${CODENAME}.jpg
-                else
-                        jp2a -b --colors --width=56 ${SCRIPTPATH}/assets/default.jpg
-                fi
                 # compilation starts here
                 source ${SCRIPTPATH}/config/${CODENAME}/${CODENAME}.compile | pv -t -i0.1
         else
                 echo "* Daemon already in place at ${MNODE_DAEMON}, not compiling"
         fi
 
-		# if it's not available after compilation, theres something wrong
+        # if it's not available after compilation, theres something wrong
         if [ ! -f ${MNODE_DAEMON} ]; then
                 echo "COMPILATION FAILED! Please open an issue at https://github.com/masternodes/vps/issues. Thank you!"
                 exit 1
@@ -716,11 +746,12 @@ function prepare_mn_interfaces() {
         echo "Default interface doesn't exist, switching to eth0"
         export ETH_INTERFACE="eth0"
     fi
-    
+
     # check for the nuse case <3
     if [ -f /sys/class/net/ens160/operstate ]; then
         export ETH_INTERFACE="ens160"
     fi
+
     # get the current interface state
     ETH_STATUS=$(cat /sys/class/net/${ETH_INTERFACE}/operstate)
 
@@ -734,58 +765,58 @@ function prepare_mn_interfaces() {
     # check for DO network config file
     if [ -f ${DO_NET_CONF} ]; then
         # found the DO config
-		if ! grep -q "::8888" ${DO_NET_CONF}; then
-			echo "ipv6 fix not found, applying!"
-			sed -i '/iface eth0 inet6 static/a dns-nameservers 2001:4860:4860::8844 2001:4860:4860::8888 8.8.8.8 127.0.0.1' ${DO_NET_CONF}
-			ifdown ${ETH_INTERFACE}; ifup ${ETH_INTERFACE};
-		fi
+        if ! grep -q "::8888" ${DO_NET_CONF}; then
+            echo "ipv6 fix not found, applying!"
+            sed -i '/iface eth0 inet6 static/a dns-nameservers 2001:4860:4860::8844 2001:4860:4860::8888 8.8.8.8 127.0.0.1' ${DO_NET_CONF} &>> ${SCRIPT_LOGFILE}
+            ifdown ${ETH_INTERFACE}; ifup ${ETH_INTERFACE}; &>> ${SCRIPT_LOGFILE}
+        fi
     fi
 
     IPV6_INT_BASE="$(ip -6 addr show dev ${ETH_INTERFACE} | grep inet6 | awk -F '[ \t]+|/' '{print $3}' | grep -v ^fe80 | grep -v ^::1 | cut -f1-4 -d':' | head -1)" &>> ${SCRIPT_LOGFILE}
 
-	validate_netchoice
-	echo "IPV6_INT_BASE AFTER : ${IPV6_INT_BASE}" &>> ${SCRIPT_LOGFILE}
+    validate_netchoice
+    echo "IPV6_INT_BASE AFTER : ${IPV6_INT_BASE}" &>> ${SCRIPT_LOGFILE}
 
     # user opted for ipv6 (default), so we have to check for ipv6 support
-	# check for vultr ipv6 box active
-	if [ -z "${IPV6_INT_BASE}" ] && [ ${net} -ne 4 ]; then
-		echo "No IPv6 support on the VPS but IPv6 is the setup default. Please switch to ipv4 with flag \"-n 4\" if you want to continue."
-		echo ""
-		echo "See the following link for instructions how to add multiple ipv4 addresses on vultr:"
-		echo "${IPV4_DOC_LINK}"
-		exit 1
-	fi
+    # check for vultr ipv6 box active
+    if [ -z "${IPV6_INT_BASE}" ] && [ ${net} -ne 4 ]; then
+        echo "No IPv6 support on the VPS but IPv6 is the setup default. Please switch to ipv4 with flag \"-n 4\" if you want to continue."
+        echo ""
+        echo "See the following link for instructions how to add multiple ipv4 addresses on vultr:"
+        echo "${IPV4_DOC_LINK}"
+        exit 1
+    fi
 
-	# generate the required ipv6 config
-	if [ "${net}" -eq 6 ]; then
+    # generate the required ipv6 config
+    if [ "${net}" -eq 6 ]; then
         # vultr specific, needed to work
-	    sed -ie '/iface ${ETH_INTERFACE} inet6 auto/s/^/#/' ${NETWORK_CONFIG}
+        sed -ie '/iface ${ETH_INTERFACE} inet6 auto/s/^/#/' ${NETWORK_CONFIG} &>> ${SCRIPT_LOGFILE}
 
-		# move current config out of the way first
-		cp ${NETWORK_CONFIG} ${NETWORK_CONFIG}.${DATE_STAMP}.bkp
+        # move current config out of the way first
+        cp ${NETWORK_CONFIG} ${NETWORK_CONFIG}.${DATE_STAMP}.bkp &>> ${SCRIPT_LOGFILE}
 
-		# create the additional ipv6 interfaces, rc.local because it's more generic
-		for NUM in $(seq 1 ${count}); do
+        # create the additional ipv6 interfaces, rc.local because it's more generic
+        for NUM in $(seq 1 ${count}); do
 
-			# check if the interfaces exist
-			ip -6 addr | grep -qi "${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}"
-			if [ $? -eq 0 ]
-			then
-			  echo "IP for masternode already exists, skipping creation" &>> ${SCRIPT_LOGFILE}
-			else
-			  echo "Creating new IP address for ${CODENAME} masternode nr ${NUM}" &>> ${SCRIPT_LOGFILE}
-			  if [ "${NETWORK_CONFIG}" = "/etc/rc.local" ]; then
-			    # need to put network config in front of "exit 0" in rc.local
-				sed -e '$i ip -6 addr add '"${IPV6_INT_BASE}"':'"${NETWORK_BASE_TAG}"'::'"${NUM}"'/64 dev '"${ETH_INTERFACE}"'\n' -i ${NETWORK_CONFIG}
-			  else
-			    # if not using rc.local, append normally
-			  	echo "ip -6 addr add ${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}/64 dev ${ETH_INTERFACE}" >> ${NETWORK_CONFIG}
-			  fi
-			  sleep 2
-			  ip -6 addr add ${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}/64 dev ${ETH_INTERFACE} &>> ${SCRIPT_LOGFILE}
-			fi
-		done # end forloop
-	fi # end ifneteq6
+            # check if the interfaces exist
+            ip -6 addr | grep -qi "${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}"
+            if [ $? -eq 0 ]
+            then
+              echo "IP for masternode already exists, skipping creation" &>> ${SCRIPT_LOGFILE}
+            else
+              echo "Creating new IP address for ${CODENAME} masternode nr ${NUM}" &>> ${SCRIPT_LOGFILE}
+              if [ "${NETWORK_CONFIG}" = "/etc/rc.local" ]; then
+                # need to put network config in front of "exit 0" in rc.local
+                sed -e '$i ip -6 addr add '"${IPV6_INT_BASE}"':'"${NETWORK_BASE_TAG}"'::'"${NUM}"'/64 dev '"${ETH_INTERFACE}"'\n' -i ${NETWORK_CONFIG} &>> ${SCRIPT_LOGFILE}
+              else
+                # if not using rc.local, append normally
+                  echo "ip -6 addr add ${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}/64 dev ${ETH_INTERFACE}" >> ${NETWORK_CONFIG} &>> ${SCRIPT_LOGFILE}
+              fi
+              sleep 2
+              ip -6 addr add ${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}/64 dev ${ETH_INTERFACE} &>> ${SCRIPT_LOGFILE}
+            fi
+        done # end forloop
+    fi # end ifneteq6
 
 }
 
@@ -1018,7 +1049,7 @@ main() {
 	fi
 
 	# source project configuration
-    source_config ${project}
+  source_config ${project}
 
 	# debug
 	if [ "$debug" -eq 1 ]; then
