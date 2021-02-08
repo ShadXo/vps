@@ -432,7 +432,7 @@ function wipe_all() {
 function generate_privkey() {
 
     echo "* Generating private key"
-	  echo -e "rpcuser=test\nrpcpassword=passtest" >> ${MNODE_CONF_BASE}/${CODENAME}_test.conf
+	  echo -e "rpcuser=test\nrpcpassword=passtest" >> ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   	#mkdir -p ${MNODE_DATA_BASE}/${CODENAME}_test
   	dogecashd -daemon -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
   	sleep 5
