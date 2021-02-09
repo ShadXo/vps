@@ -405,7 +405,7 @@ function create_mn_configuration() {
   if [[ -z "${BIND}" ]]
   then
     # Bind IP.
-    BIND=127.0.0.1:56740
+    BIND=192.168.10.40:56740
     sed -e "s/BIND/${BIND}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   fi
 
