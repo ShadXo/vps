@@ -391,7 +391,7 @@ function create_mn_configuration() {
   if [[ -z "${RPC_PORT}" ]]
   then
     # RPC port.
-    RPC_PORT=56740
+    RPC_PORT=56739
     sed -e "s/RPC_PORT/${RPC_PORT}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   fi
 
@@ -445,9 +445,11 @@ function create_control_configuration() {
 	# create one line per masternode with the data we have
 	for NUM in $(seq 1 ${count}); do
 		if [ -n "${PRIVKEY[${NUM}]}" ]; then
-    			echo ${CODENAME}MN${NUM} [${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}]:${MNODE_INBOUND_PORT} ${PRIVKEY[${NUM}]} COLLATERAL_TX_FOR_${CODENAME}MN${NUM} OUTPUT_NO_FOR_${CODENAME}MN${NUM} >> /tmp/${CODENAME}_masternode.conf
+    			#echo ${CODENAME}MN${NUM} [${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}]:${MNODE_INBOUND_PORT} ${PRIVKEY[${NUM}]} COLLATERAL_TX_FOR_${CODENAME}MN${NUM} OUTPUT_NO_FOR_${CODENAME}MN${NUM} >> /tmp/${CODENAME}_masternode.conf
+          echo ${CODENAME}_n${NUM} ${BIND} ${PRIVKEY[${NUM}]} COLLATERAL_TX_FOR_${CODENAME}_n${NUM} OUTPUT_NO_FOR_${CODENAME}_n${NUM} >> /tmp/${CODENAME}_masternode.conf
     		else
-			echo ${CODENAME}MN${NUM} [${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}]:${MNODE_INBOUND_PORT} MASTERNODE_PRIVKEY_FOR_${CODENAME}MN${NUM} COLLATERAL_TX_FOR_${CODENAME}MN${NUM} OUTPUT_NO_FOR_${CODENAME}MN${NUM} >> /tmp/${CODENAME}_masternode.conf
+			#echo ${CODENAME}MN${NUM} [${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}]:${MNODE_INBOUND_PORT} MASTERNODE_PRIVKEY_FOR_${CODENAME}MN${NUM} COLLATERAL_TX_FOR_${CODENAME}MN${NUM} OUTPUT_NO_FOR_${CODENAME}MN${NUM} >> /tmp/${CODENAME}_masternode.conf
+      echo ${CODENAME}_n${NUM} ${BIND} MASTERNODE_PRIVKEY_FOR_${CODENAME}_n${NUM} COLLATERAL_TX_FOR_${CODENAME}_n${NUM} OUTPUT_NO_FOR_${CODENAME}_n${NUM} >> /tmp/${CODENAME}_masternode.conf
 		fi
 	done
 }
@@ -470,12 +472,12 @@ function create_systemd_configuration() {
 			[Service]
 			User=${MNODE_USER}
 			Group=${MNODE_USER}
-
+			WorkingDirectory=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
 			Type=forking
 			PIDFile=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}/${CODENAME}.pid
 			ExecStart=${MNODE_DAEMON} -daemon -pid=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}/${CODENAME}.pid \
 			-conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
-
+			ExecStop=${MNODE_CLI} stop
 			Restart=always
 			RestartSec=5
 			PrivateTmp=true
@@ -509,8 +511,8 @@ function create_systemd_configuration2() {
 			Group=${MNODE_USER}
 			WorkingDirectory=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
 			Type=forking
-			PIDFile=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}/${CODENAME}.pid
-      ExecStart=${MNODE_DAEMON} -daemon -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
+			#PIDFile=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}/${CODENAME}.pid
+			ExecStart=${MNODE_DAEMON} -daemon -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
 			ExecStop=${MNODE_CLI} stop
 			Restart=always
 			RestartSec=70
@@ -565,7 +567,7 @@ function generate_privkey() {
     sed 's/\(^.*masternode\(\|privkey\)=.*$\)/#\1/' -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
 	  #echo -e "rpcuser=test\nrpcpassword=passtest" >> ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   	#mkdir -p ${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
-  	dogecashd -daemon -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM} 2>/dev/null
+  	dogecashd -daemon -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM} &>/dev/null
   	sleep 5
 
 	for NUM in $(seq 1 ${count}); do
@@ -573,7 +575,7 @@ function generate_privkey() {
     			PRIVKEY[${NUM}]=$(dogecash-cli -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM} createmasternodekey)
     		fi
   	done
-  	dogecash-cli -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM} stop 2>/dev/null
+  	dogecash-cli -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM} stop &>/dev/null
   	sleep 5
   	#rm -r ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf ${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
     #remove uncomment masternode= and masternodeprivkey=
