@@ -507,12 +507,12 @@ function create_systemd_configuration2() {
 			[Service]
 			User=${MNODE_USER}
 			Group=${MNODE_USER}
-      WorkingDirectory=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
+			WorkingDirectory=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
 			Type=forking
 			PIDFile=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}/${CODENAME}.pid
       ExecStart=${MNODE_DAEMON} -daemon -pid=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}/${CODENAME}.pid \
 			-conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
-      ExecStop=${MNODE_CLI} stop
+			ExecStop=${MNODE_CLI} stop
 			Restart=always
 			RestartSec=70
 			#PrivateTmp=true
