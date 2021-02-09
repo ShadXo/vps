@@ -1057,6 +1057,8 @@ main() {
 
     echo "starting" &> ${SCRIPT_LOGFILE}
     showbanner
+    # source project configuration
+    source_config ${project}
 
 	# debug
 	if [ "$debug" -eq 1 ]; then
@@ -1080,9 +1082,6 @@ main() {
 		echo "DOWNLOAD_URL:         ${downloadUrl}"
 		echo "END DEFAULTS => "
 	fi
-
-	# source project configuration
-  source_config ${project}
 
 	# debug
 	if [ "$debug" -eq 1 ]; then
