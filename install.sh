@@ -613,11 +613,12 @@ function source_config() {
         prepare_mn_interfaces
         swaphack
     fi
+    install_packages
     if [[ "$download" -eq 1 ]]; then
       echo "Download binary from url" &>> ${SCRIPT_LOGFILE}
       download_bin_from_url
 		else
-      install_packages
+      #install_packages
 		  echo "Configured to build mn from source" &>> ${SCRIPT_LOGFILE}
 			build_mn_from_source
 		fi
