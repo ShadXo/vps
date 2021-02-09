@@ -430,6 +430,43 @@ function create_systemd_configuration() {
 
 }
 
+function create_systemd_configuration2() {
+
+  # Setup systemd to start masternode on restart.
+    echo "* (over)writing systemd config files for masternodes"
+	# create one config file per masternode
+	for NUM in $(seq 1 ${count}); do
+	#PASS=$(date | md5sum | cut -c1-24)
+		echo "* (over)writing systemd config file ${SYSTEMD_CONF}/${CODENAME}_n${NUM}.service"  &>> ${SCRIPT_LOGFILE}
+		cat > ${SYSTEMD_CONF}/${CODENAME}_n${NUM}.service <<-EOF
+			[Unit]
+			Description=${CODENAME} distributed currency daemon
+			After=network.target
+
+			[Service]
+			User=${MNODE_USER}
+			Group=${MNODE_USER}
+
+			Type=forking
+			PIDFile=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}/${CODENAME}.pid
+			ExecStart=${MNODE_DAEMON} -daemon -pid=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}/${CODENAME}.pid \
+			-conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
+
+			Restart=always
+			RestartSec=70
+			PrivateTmp=true
+			TimeoutStopSec=240s
+			TimeoutStartSec=70s
+			StartLimitInterval=600s
+			StartLimitBurst=3
+
+			[Install]
+			WantedBy=multi-user.target
+		EOF
+	done
+
+}
+
 #
 # /* set all permissions to the masternode user */
 #
@@ -638,7 +675,7 @@ function source_config() {
         configure_firewall
         create_mn_configuration
         create_control_configuration
-        create_systemd_configuration
+        create_systemd_configuration2
     fi
     set_permissions
     cleanup_after
@@ -1057,6 +1094,7 @@ main() {
 
     echo "starting" &> ${SCRIPT_LOGFILE}
     showbanner
+
     # source project configuration
     source_config ${project}
 
