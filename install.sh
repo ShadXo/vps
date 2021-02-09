@@ -495,12 +495,13 @@ function create_systemd_configuration2() {
 			Group=${MNODE_USER}
       WorkingDirectory=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
 			Type=forking
-			#PIDFile=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}/${CODENAME}.pid
-			ExecStart=${MNODE_DAEMON} -daemon -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
+			PIDFile=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}/${CODENAME}.pid
+      ExecStart=${MNODE_DAEMON} -daemon -pid=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}/${CODENAME}.pid \
+			-conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
       ExecStop=${MNODE_CLI} stop
 			Restart=always
 			RestartSec=70
-			PrivateTmp=true
+			#PrivateTmp=true
 			TimeoutStopSec=240s
 			TimeoutStartSec=70s
 			StartLimitInterval=600s
