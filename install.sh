@@ -478,47 +478,16 @@ function create_systemd_configuration() {
 			ExecStop=${MNODE_CLI} stop
 			Restart=always
 			RestartSec=5
+      #RestartSec=70
 			PrivateTmp=true
+      TimeoutStartSec=5s
+      #TimeoutStartSec=70s
 			TimeoutStopSec=60s
-			TimeoutStartSec=5s
+      #TimeoutStopSec=240s
 			StartLimitInterval=120s
+      #StartLimitInterval=600s
 			StartLimitBurst=15
-
-			[Install]
-			WantedBy=multi-user.target
-		EOF
-	done
-
-}
-
-function create_systemd_configuration2() {
-
-  # Setup systemd to start masternode on restart.
-    echo "* (over)writing systemd config files for masternodes"
-	# create one config file per masternode
-	for NUM in $(seq 1 ${count}); do
-	#PASS=$(date | md5sum | cut -c1-24)
-		echo "* (over)writing systemd config file ${SYSTEMD_CONF}/${CODENAME}_n${NUM}.service"  &>> ${SCRIPT_LOGFILE}
-		cat > ${SYSTEMD_CONF}/${CODENAME}_n${NUM}.service <<-EOF
-			[Unit]
-			Description=${CODENAME} distributed currency daemon
-			After=network.target
-
-			[Service]
-			User=${MNODE_USER}
-			Group=${MNODE_USER}
-			WorkingDirectory=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
-			Type=forking
-			#PIDFile=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}/${CODENAME}.pid
-			ExecStart=${MNODE_DAEMON} -daemon -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
-			ExecStop=${MNODE_CLI} stop
-			Restart=always
-			RestartSec=70
-			PrivateTmp=true
-			TimeoutStopSec=240s
-			TimeoutStartSec=70s
-			StartLimitInterval=600s
-			StartLimitBurst=3
+      #StartLimitBurst=3
 
 			[Install]
 			WantedBy=multi-user.target
