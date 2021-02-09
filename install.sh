@@ -31,7 +31,7 @@ declare -r SCRIPT_VERSION="v0.9.10"
 declare -r SCRIPT_LOGFILE="/tmp/nodemaster_${DATE_STAMP}_out.log"
 declare -r IPV4_DOC_LINK="https://www.vultr.com/docs/add-secondary-ipv4-address"
 declare -r DO_NET_CONF="/etc/network/interfaces.d/50-cloud-init.cfg"
-declare -r NETWORK_BASE_TAG="$(dd if=/dev/urandom bs=2 count=1 2>/dev/null | od -x -A n | sed -e 's/^[[:space:]]*//g')"
+#declare -r NETWORK_BASE_TAG="$(dd if=/dev/urandom bs=2 count=1 2>/dev/null | od -x -A n | sed -e 's/^[[:space:]]*//g')"
 
 function showbanner() {
 cat << "EOF"
@@ -445,10 +445,10 @@ function create_control_configuration() {
 	for NUM in $(seq 1 ${count}); do
 		if [ -n "${PRIVKEY[${NUM}]}" ]; then
     			#echo ${CODENAME}MN${NUM} [${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}]:${MNODE_INBOUND_PORT} ${PRIVKEY[${NUM}]} COLLATERAL_TX_FOR_${CODENAME}MN${NUM} OUTPUT_NO_FOR_${CODENAME}MN${NUM} >> /tmp/${CODENAME}_masternode.conf
-          echo ${CODENAME}_n${NUM} ${BIND} ${PRIVKEY[${NUM}]} COLLATERAL_TX_FOR_${CODENAME}_n${NUM} OUTPUT_NO_FOR_${CODENAME}_n${NUM} >> /tmp/${CODENAME}_masternode.conf
+          echo ${CODENAME}_n${NUM} ${BIND[${NUM}]} ${PRIVKEY[${NUM}]} COLLATERAL_TX_FOR_${CODENAME}_n${NUM} OUTPUT_NO_FOR_${CODENAME}_n${NUM} >> /tmp/${CODENAME}_masternode.conf
     		else
 			#echo ${CODENAME}MN${NUM} [${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}]:${MNODE_INBOUND_PORT} MASTERNODE_PRIVKEY_FOR_${CODENAME}MN${NUM} COLLATERAL_TX_FOR_${CODENAME}MN${NUM} OUTPUT_NO_FOR_${CODENAME}MN${NUM} >> /tmp/${CODENAME}_masternode.conf
-      echo ${CODENAME}_n${NUM} ${BIND} MASTERNODE_PRIVKEY_FOR_${CODENAME}_n${NUM} COLLATERAL_TX_FOR_${CODENAME}_n${NUM} OUTPUT_NO_FOR_${CODENAME}_n${NUM} >> /tmp/${CODENAME}_masternode.conf
+      echo ${CODENAME}_n${NUM} ${BIND[${NUM}]} MASTERNODE_PRIVKEY_FOR_${CODENAME}_n${NUM} COLLATERAL_TX_FOR_${CODENAME}_n${NUM} OUTPUT_NO_FOR_${CODENAME}_n${NUM} >> /tmp/${CODENAME}_masternode.conf
 		fi
 	done
 }
@@ -922,6 +922,37 @@ function prepare_mn_interfaces() {
         exit 1
     fi
 
+    # generate the required ipv4 config
+    if [ "${net_test}" -eq 4 ]; then
+
+        # move current config out of the way first
+        cp ${NETWORK_CONFIG} ${NETWORK_CONFIG}.${DATE_STAMP}.bkp &>> ${SCRIPT_LOGFILE}
+
+        # create the additional ipv6 interfaces, rc.local because it's more generic
+        for NUM in $(seq 1 ${count}); do
+
+            # check if the interfaces exist
+            ip -6 addr | grep -qi "${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}"
+            if [ $? -eq 0 ]
+            then
+              echo "IP for masternode already exists, skipping creation" &>> ${SCRIPT_LOGFILE}
+            else
+              echo "Creating new IP address for ${CODENAME} masternode nr ${NUM}" &>> ${SCRIPT_LOGFILE}
+              if [ "${NETWORK_CONFIG}" = "/etc/rc.local" ]; then
+                # need to put network config in front of "exit 0" in rc.local
+                sed -e '$i ip -6 addr add '"${IPV6_INT_BASE}"':'"${NETWORK_BASE_TAG}"'::'"${NUM}"'/64 dev '"${ETH_INTERFACE}"'\n' -i ${NETWORK_CONFIG} &>> ${SCRIPT_LOGFILE}
+              else
+                # if not using rc.local, append normally
+                  echo "ip -6 addr add ${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}/64 dev ${ETH_INTERFACE}" >> ${NETWORK_CONFIG} &>> ${SCRIPT_LOGFILE}
+              fi
+              sleep 2
+              ip -6 addr add ${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}/64 dev ${ETH_INTERFACE} &>> ${SCRIPT_LOGFILE}
+            fi
+            # Create BIND
+            $BIND[$NUM]="[${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}]"
+        done # end forloop
+    fi # end ifneteq4
+
     # generate the required ipv6 config
     if [ "${net}" -eq 6 ]; then
         # vultr specific, needed to work
@@ -951,7 +982,7 @@ function prepare_mn_interfaces() {
               ip -6 addr add ${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}/64 dev ${ETH_INTERFACE} &>> ${SCRIPT_LOGFILE}
             fi
             # Create BIND
-            $BIND[$NUM]="${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}"
+            $BIND[$NUM]="[${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}]"
         done # end forloop
     fi # end ifneteq6
 
