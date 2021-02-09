@@ -306,7 +306,7 @@ function create_mn_configuration() {
 
   # create one config file per masternode
   for NUM in $(seq 1 ${count}); do
-  PASS=$(date | md5sum | cut -c1-24)
+  #PASS=$(date | md5sum | cut -c1-24)
 
 	# we dont want to overwrite an existing config file
 	if [ ! -f ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf ]; then
@@ -322,7 +322,32 @@ function create_mn_configuration() {
 		# replace placeholders
 		echo "running sed on file ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf"                                &>> ${SCRIPT_LOGFILE}
 	fi
-  
+
+  if [[ -z "${RPC_USERNAME}" ]]
+  then
+    # RPC username.
+    RPC_USERNAME=${CODENAME}
+    sed -e "s/RPC_USERNAME/${RPC_USERNAME}_rpc_${CODENAME}_n${NUM}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+  fi
+
+  # Generate random password.
+  if ! [ -x "$( command -v pwgen )" ]
+  then
+    RPC_PASSWORD="$( openssl rand -hex 44 )"
+    sed -e "s/RPC_PASSWORD/${RPC_PASSWORD}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+
+  else
+    RPC_PASSWORD="$( pwgen -1 -s 44 )"
+    sed -e "s/RPC_PASSWORD/${RPC_PASSWORD}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+  fi
+
+  if [[ -z "${RPC_PORT}" ]]
+  then
+    # RPC username.
+    RPC_PORT=56740
+    sed -e "s/RPC_PORT/${RPC_PORT}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+  fi
+
   # private key initialize
   if [ "$generate" -eq 1 ]; then
       echo "Generating masternode private key" &>> ${SCRIPT_LOGFILE}
@@ -331,7 +356,7 @@ function create_mn_configuration() {
 
   if [ -n "${PRIVKEY[${NUM}]}" ]; then
   	if [ ${#PRIVKEY[${NUM}]} -eq 51 ]; then
-  		sed -e "s/HERE_GOES_YOUR_MASTERNODE_KEY_FOR_MASTERNODE_XXX_GIT_PROJECT_XXX_XXX_NUM_XXX/${PRIVKEY[${NUM}]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+  		sed -e "s/PRIVKEY/${PRIVKEY[${NUM}]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
     	else
       		echo "input private key ${PRIVKEY[${NUM}]} was invalid. Please check the key, and restart this script."
       		rm -r /etc/masternodes
@@ -339,7 +364,8 @@ function create_mn_configuration() {
     	fi
   else :
   fi
-      sed -e "s/XXX_GIT_PROJECT_XXX/${CODENAME}/" -e "s/XXX_NUM_XXY/${NUM}]/" -e "s/XXX_NUM_XXX/${NUM}/" -e "s/XXX_PASS_XXX/${PASS}/" -e "s/XXX_IPV6_INT_BASE_XXX/[${IPV6_INT_BASE}/" -e "s/XXX_NETWORK_BASE_TAG_XXX/${NETWORK_BASE_TAG}/" -e "s/XXX_MNODE_INBOUND_PORT_XXX/${MNODE_INBOUND_PORT}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+      #Write to .conf
+      #sed -e "s/RPC_USERNAME/${RPC_USERNAME}_rpc_${CODENAME}_n${NUM}/" -e "s/RPC_PASSWORD/${RPC_PASSWORD}/" -e "s/RPC_PORT/${RPC_PORT}/" -e "s/XXX_NUM_XXY/${NUM}]/" -e "s/XXX_IPV6_INT_BASE_XXX/[${IPV6_INT_BASE}/" -e "s/XXX_NETWORK_BASE_TAG_XXX/${NETWORK_BASE_TAG}/" -e "s/XXX_MNODE_INBOUND_PORT_XXX/${MNODE_INBOUND_PORT}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
 	if [ -z "${PRIVKEY[${NUM}]}" ]; then
 		if [ "$startnodes" -eq 1 ]; then
 			#uncomment masternode= and masternodeprivkey= so the node can autostart and sync
@@ -373,7 +399,7 @@ function create_systemd_configuration() {
     echo "* (over)writing systemd config files for masternodes"
 	# create one config file per masternode
 	for NUM in $(seq 1 ${count}); do
-	PASS=$(date | md5sum | cut -c1-24)
+	#PASS=$(date | md5sum | cut -c1-24)
 		echo "* (over)writing systemd config file ${SYSTEMD_CONF}/${CODENAME}_n${NUM}.service"  &>> ${SCRIPT_LOGFILE}
 		cat > ${SYSTEMD_CONF}/${CODENAME}_n${NUM}.service <<-EOF
 			[Unit]
@@ -411,7 +437,7 @@ function set_permissions() {
 
 	# maybe add a sudoers entry later
 	mkdir -p /var/log/sentinel &>> ${SCRIPT_LOGFILE}
-	#chown -R ${MNODE_USER}:${MNODE_USER} ${MNODE_CONF_BASE} ${MNODE_DATA_BASE} /var/log/sentinel ${SENTINEL_BASE}/database &>> ${SCRIPT_LOGFILE}
+	chown -R ${MNODE_USER}:${MNODE_USER} ${MNODE_CONF_BASE} ${MNODE_DATA_BASE} /var/log/sentinel ${SENTINEL_BASE}/database &>> ${SCRIPT_LOGFILE}
   # make group permissions same as user, so vps-user can be added to masternode group
   chmod -R g=u ${MNODE_CONF_BASE} ${MNODE_DATA_BASE} /var/log/sentinel &>> ${SCRIPT_LOGFILE}
 
