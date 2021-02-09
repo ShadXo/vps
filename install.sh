@@ -562,6 +562,9 @@ function generate_privkey() {
   	dogecash-cli -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM} stop
   	sleep 5
   	#rm -r ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf ${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
+    #remove uncomment masternode= and masternodeprivkey=
+    sed -e "s/#masternode=1/masternode=1/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+    sed -e "s/#masternodeprivkey=PRIVKEY/masternodeprivkey=PRIVKEY/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
 }
 
 #
