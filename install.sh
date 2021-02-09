@@ -322,6 +322,12 @@ function create_mn_configuration() {
 		# replace placeholders
 		echo "running sed on file ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf"                                &>> ${SCRIPT_LOGFILE}
 	fi
+  
+  # private key initialize
+  if [ "$generate" -eq 1 ]; then
+      echo "Generating masternode private key" &>> ${SCRIPT_LOGFILE}
+      generate_privkey
+  fi
 
   if [ -n "${PRIVKEY[${NUM}]}" ]; then
   	if [ ${#PRIVKEY[${NUM}]} -eq 51 ]; then
@@ -432,8 +438,8 @@ function wipe_all() {
 function generate_privkey() {
 
     echo "* Generating private key"
-	  echo -e "rpcuser=test\nrpcpassword=passtest" >> ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
-  	mkdir -p ${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
+	  #echo -e "rpcuser=test\nrpcpassword=passtest" >> ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+  	#mkdir -p ${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
   	dogecashd -daemon -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
   	sleep 5
 
@@ -444,7 +450,7 @@ function generate_privkey() {
   	done
   	dogecash-cli -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM} stop
   	sleep 5
-  	rm -r ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf ${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
+  	#rm -r ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf ${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
 }
 
 #
@@ -598,10 +604,10 @@ function source_config() {
             create_sentinel_setup
         fi
         # private key initialize
-        if [ "$generate" -eq 1 ]; then
-      	    echo "Generating masternode private key" &>> ${SCRIPT_LOGFILE}
-      	    generate_privkey
-        fi
+        #if [ "$generate" -eq 1 ]; then
+      	#    echo "Generating masternode private key" &>> ${SCRIPT_LOGFILE}
+      	#    generate_privkey
+        #fi
         configure_firewall
         create_mn_configuration
         create_control_configuration
