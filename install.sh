@@ -547,6 +547,8 @@ function wipe_all() {
 function generate_privkey() {
 
     echo "* Generating private key"
+    #uncomment masternode= and masternodeprivkey= so the node can autostart and sync
+    sed 's/\(^.*masternode\(\|privkey\)=.*$\)/#\1/' -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
 	  #echo -e "rpcuser=test\nrpcpassword=passtest" >> ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   	#mkdir -p ${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
   	dogecashd -daemon -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
