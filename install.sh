@@ -740,7 +740,7 @@ function source_config() {
         configure_firewall
         create_mn_configuration
         create_control_configuration
-        create_systemd_configuration
+        create_systemd_configuration2
     fi
     set_permissions
     cleanup_after
