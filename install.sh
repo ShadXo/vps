@@ -412,7 +412,7 @@ function create_mn_configuration() {
   # private key initialize
   if [ "$generate" -eq 1 ]; then
       echo "Generating masternode private key" &>> ${SCRIPT_LOGFILE}
-      generate_privkey
+      #generate_privkey
   fi
 
   if [ -n "${PRIVKEY[${NUM}]}" ]; then
@@ -428,7 +428,7 @@ function create_mn_configuration() {
       #Write to .conf
       #sed -e "s/RPC_USERNAME/${RPC_USERNAME}_rpc_${CODENAME}_n${NUM}/" -e "s/RPC_PASSWORD/${RPC_PASSWORD}/" -e "s/RPC_PORT/${RPC_PORT}/" -e "s/XXX_NUM_XXY/${NUM}]/" -e "s/XXX_IPV6_INT_BASE_XXX/[${IPV6_INT_BASE}/" -e "s/XXX_NETWORK_BASE_TAG_XXX/${NETWORK_BASE_TAG}/" -e "s/XXX_MNODE_INBOUND_PORT_XXX/${MNODE_INBOUND_PORT}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
 	if [ -z "${PRIVKEY[${NUM}]}" ]; then
-		if [ "$startnodes" -eq 1 ]; then
+		if [ "$startnodes" -eq 0 ]; then
 			#uncomment masternode= and masternodeprivkey= so the node can autostart and sync
 			sed 's/\(^.*masternode\(\|privkey\)=.*$\)/#\1/' -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
 		fi
@@ -509,9 +509,8 @@ function create_systemd_configuration2() {
 			Group=${MNODE_USER}
 			WorkingDirectory=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
 			Type=forking
-			PIDFile=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}/${CODENAME}.pid
-      ExecStart=${MNODE_DAEMON} -daemon -pid=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}/${CODENAME}.pid \
-			-conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
+			#PIDFile=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}/${CODENAME}.pid
+      ExecStart=${MNODE_DAEMON} -daemon -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
 			ExecStop=${MNODE_CLI} stop
 			Restart=always
 			RestartSec=70
@@ -566,7 +565,7 @@ function generate_privkey() {
     sed 's/\(^.*masternode\(\|privkey\)=.*$\)/#\1/' -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
 	  #echo -e "rpcuser=test\nrpcpassword=passtest" >> ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   	#mkdir -p ${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
-  	dogecashd -daemon -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
+  	dogecashd -daemon -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM} 2>/dev/null
   	sleep 5
 
 	for NUM in $(seq 1 ${count}); do
@@ -574,7 +573,7 @@ function generate_privkey() {
     			PRIVKEY[${NUM}]=$(dogecash-cli -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM} createmasternodekey)
     		fi
   	done
-  	dogecash-cli -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM} stop
+  	dogecash-cli -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM} stop 2>/dev/null
   	sleep 5
   	#rm -r ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf ${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
     #remove uncomment masternode= and masternodeprivkey=
