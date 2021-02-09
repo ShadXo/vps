@@ -7,7 +7,7 @@
 #  ╚═╝  ╚═══╝ ╚═════╝ ╚═════╝ ╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝   ╚═╝   ╚══════╝╚═╝  ╚═╝
 #                                                              ╚╗ @marsmensch 2016-2018 ╔╝
 #
-# version 	v0.9.4
+# version 	v0.9.10
 # date    	2018-04-04
 #
 # function:	part of the masternode scripts, source the proper config file
@@ -27,7 +27,7 @@ declare -r CRYPTOS=`ls -l config/ | egrep '^d' | awk '{print $9}' | xargs echo -
 declare -r DATE_STAMP="$(date +%y-%m-%d-%s)"
 declare -r SCRIPTPATH=$( cd $(dirname ${BASH_SOURCE[0]}) > /dev/null; pwd -P )
 declare -r MASTERPATH="$(dirname "${SCRIPTPATH}")"
-declare -r SCRIPT_VERSION="v0.9.5"
+declare -r SCRIPT_VERSION="v0.9.10"
 declare -r SCRIPT_LOGFILE="/tmp/nodemaster_${DATE_STAMP}_out.log"
 declare -r IPV4_DOC_LINK="https://www.vultr.com/docs/add-secondary-ipv4-address"
 declare -r DO_NET_CONF="/etc/network/interfaces.d/50-cloud-init.cfg"
@@ -147,7 +147,6 @@ function swaphack() {
 if [ $(free | awk '/^Swap:/ {exit !$2}') ] || [ ! -f "/var/mnode_swap.img" ];then
 	echo "* No proper swap, creating it"
 	# needed because ant servers are ants
-	MNODE_SWAPSIZE=2048
 	rm -f /var/mnode_swap.img
 	dd if=/dev/zero of=/var/mnode_swap.img bs=1024k count=${MNODE_SWAPSIZE} &>> ${SCRIPT_LOGFILE}
 	chmod 0600 /var/mnode_swap.img
@@ -370,43 +369,43 @@ function create_mn_configuration() {
 		echo "running sed on file ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf"                                &>> ${SCRIPT_LOGFILE}
 	fi
 
-  if [[ -z "${RPC_USERNAME}" ]]
+  if [[ -z "${RPC_USERNAME[${NUM}]}" ]]
   then
     # RPC username.
-    RPC_USERNAME=${CODENAME}
-    sed -e "s/RPC_USERNAME/${RPC_USERNAME}_rpc_${CODENAME}_n${NUM}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+    RPC_USERNAME[${NUM}]=${CODENAME}
+    sed -e "s/RPC_USERNAME/${RPC_USERNAME[${NUM}]}_rpc_${CODENAME}_n${NUM}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   fi
 
   # Generate random password.
   if ! [ -x "$( command -v pwgen )" ]
   then
-    RPC_PASSWORD="$( openssl rand -hex 44 )"
-    sed -e "s/RPC_PASSWORD/${RPC_PASSWORD}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+    RPC_PASSWORD[${NUM}]="$( openssl rand -hex 44 )"
+    sed -e "s/RPC_PASSWORD/${RPC_PASSWORD[${NUM}]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
 
   else
-    RPC_PASSWORD="$( pwgen -1 -s 44 )"
-    sed -e "s/RPC_PASSWORD/${RPC_PASSWORD}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+    RPC_PASSWORD[${NUM}]="$( pwgen -1 -s 44 )"
+    sed -e "s/RPC_PASSWORD/${RPC_PASSWORD[${NUM}]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   fi
 
-  if [[ -z "${RPC_PORT}" ]]
+  if [[ -z "${RPC_PORT[${NUM}]}" ]]
   then
     # RPC port.
-    RPC_PORT=56739
+    RPC_PORT[${NUM}]=56739
     sed -e "s/RPC_PORT/${RPC_PORT}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   fi
 
-  if [[ -z "${EXTERNALIP}" ]]
+  if [[ -z "${EXTERNALIP[${NUM}]}" ]]
   then
     # External IP.
-    EXTERNALIP=1.1.1.1:56740
-    sed -e "s/EXTERNALIP/${EXTERNALIP}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+    EXTERNALIP[${NUM}]=1.1.1.1:56740
+    sed -e "s/EXTERNALIP/${EXTERNALIP[${NUM}]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   fi
 
-  if [[ -z "${BIND}" ]]
+  if [[ -z "${BIND[${NUM}]}" ]]
   then
     # Bind IP.
-    BIND=192.168.10.40:56740
-    sed -e "s/BIND/${BIND}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+    BIND[$NUM]=192.168.10.40:56740
+    sed -e "s/BIND/${BIND[${NUM}]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   fi
 
   # private key initialize
@@ -426,7 +425,7 @@ function create_mn_configuration() {
   else :
   fi
       #Write to .conf
-      #sed -e "s/RPC_USERNAME/${RPC_USERNAME}_rpc_${CODENAME}_n${NUM}/" -e "s/RPC_PASSWORD/${RPC_PASSWORD}/" -e "s/RPC_PORT/${RPC_PORT}/" -e "s/XXX_NUM_XXY/${NUM}]/" -e "s/XXX_IPV6_INT_BASE_XXX/[${IPV6_INT_BASE}/" -e "s/XXX_NETWORK_BASE_TAG_XXX/${NETWORK_BASE_TAG}/" -e "s/XXX_MNODE_INBOUND_PORT_XXX/${MNODE_INBOUND_PORT}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+      #sed -e "s/RPC_USERNAME/${RPC_USERNAME[${NUM}]}_rpc_${CODENAME}_n${NUM}/" -e "s/RPC_PASSWORD/${RPC_PASSWORD[${NUM}]}/" -e "s/RPC_PORT/${RPC_PORT[${NUM}]}/" -e "s/XXX_NUM_XXY/${NUM}]/" -e "s/XXX_IPV6_INT_BASE_XXX/[${IPV6_INT_BASE}/" -e "s/XXX_NETWORK_BASE_TAG_XXX/${NETWORK_BASE_TAG}/" -e "s/XXX_MNODE_INBOUND_PORT_XXX/${MNODE_INBOUND_PORT}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
 	if [ -z "${PRIVKEY[${NUM}]}" ]; then
 		if [ "$startnodes" -eq 0 ]; then
 			#uncomment masternode= and masternodeprivkey= so the node can autostart and sync
@@ -951,6 +950,8 @@ function prepare_mn_interfaces() {
               sleep 2
               ip -6 addr add ${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}/64 dev ${ETH_INTERFACE} &>> ${SCRIPT_LOGFILE}
             fi
+            # Create BIND
+            $BIND[$NUM]="${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}"
         done # end forloop
     fi # end ifneteq6
 
