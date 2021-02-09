@@ -1081,7 +1081,7 @@ main() {
 	fi
 
 	# source project configuration
-  #source_config ${project}
+  source_config ${project}
 
 	# debug
 	if [ "$debug" -eq 1 ]; then
