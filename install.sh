@@ -398,7 +398,7 @@ function create_mn_configuration() {
   if [[ -z "${EXTERNALIP}" ]]
   then
     # External IP.
-    EXTERNALIP=0.0.0.0:56740
+    EXTERNALIP=1.1.1.1:56740
     sed -e "s/EXTERNALIP/${EXTERNALIP}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   fi
 
