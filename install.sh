@@ -131,7 +131,7 @@ function install_packages() {
     libcurl4-gnutls-dev protobuf-compiler libboost-all-dev autotools-dev automake \
     libboost-all-dev libssl-dev make autoconf libtool git apt-utils g++ \
     libprotobuf-dev pkg-config libudev-dev libqrencode-dev bsdmainutils \
-    pkg-config libgmp3-dev libevent-dev jp2a pv virtualenv libdb4.8-dev libdb4.8++-dev  &>> ${SCRIPT_LOGFILE}
+    pkg-config libgmp3-dev libevent-dev jp2a pv virtualenv libdb4.8-dev libdb4.8++-dev pwgen  &>> ${SCRIPT_LOGFILE}
 
     # only for 18.04 // openssl
     if [[ "${VERSION_ID}" == "18.04" ]] ; then
@@ -237,6 +237,53 @@ function create_sentinel_setup() {
     echo ""
     echo "$(tput sgr0)$(tput setaf 2)If it works, add the command as cronjob:  $(tput sgr0)"
     echo "$(tput sgr0)$(tput setaf 2)* * * * * export SENTINEL_CONFIG=${SENTINEL_BASE}/${CODENAME}${NUM}_sentinel.conf; cd ${SENTINEL_BASE} && ${SENTINEL_ENV}/bin/python ${SENTINEL_BASE}/bin/sentinel.py >> /var/log/sentinel/sentinel-cron.log$(tput sgr0) 2>&1"
+}
+
+function find_free_port() {
+  PRIVIPADDRESS=${1}
+  if [[ -r /proc/sys/net/ipv4/ip_local_port_range ]]
+  then
+    read -r LOWERPORT UPPERPORT < /proc/sys/net/ipv4/ip_local_port_range
+  fi
+  if [[ ! $LOWERPORT =~ $RE ]] || [[ ! $UPPERPORT =~ $RE ]]
+  then
+    read -r LOWERPORT UPPERPORT <<< "$( sudo sysctl net.ipv4.ip_local_port_range | cut -d '=' -f2 )"
+  fi
+  if [[ ! $LOWERPORT =~ $RE ]] || [[ ! $UPPERPORT =~ $RE ]]
+  then
+    LOWERPORT=32769
+    UPPERPORT=60998
+  fi
+
+  LAST_PORT=0
+  while :
+  do
+    PORT_TO_TEST=$( shuf -i "${LOWERPORT}"-"${UPPERPORT}" -n 1 )
+    while [[ "${LAST_PORT}" == "${PORT_TO_TEST}" ]]
+    do
+      PORT_TO_TEST=$( shuf -i "${LOWERPORT}"-"${UPPERPORT}" -n 1 )
+      sleep 0.3
+    done
+    LAST_PORT="${PORT_TO_TEST}"
+    if [[ $( IS_PORT_OPEN "${PRIVIPADDRESS}" "${PORT_TO_TEST}" | tail -n 1 ) -eq 0 ]]
+    then
+      continue
+    fi
+    if [[ $( IS_PORT_OPEN "127.0.0.1" "${PORT_TO_TEST}" | tail -n 1 ) -eq 0 ]]
+    then
+      continue
+    fi
+    if [[ $( IS_PORT_OPEN "0.0.0.0" "${PORT_TO_TEST}" | tail -n 1 ) -eq 0 ]]
+    then
+      continue
+    fi
+    if [[ $( IS_PORT_OPEN "::" "${PORT_TO_TEST}" "\[::.*\]:${PORT_TO_TEST}" | tail -n 1 ) -eq 0 ]]
+    then
+      continue
+    fi
+    break
+  done
+  echo "${PORT_TO_TEST}"
 }
 
 #
@@ -448,9 +495,8 @@ function create_systemd_configuration2() {
 			Group=${MNODE_USER}
 
 			Type=forking
-			PIDFile=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}/${CODENAME}.pid
-			ExecStart=${MNODE_DAEMON} -daemon -pid=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}/${CODENAME}.pid \
-			-conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
+			#PIDFile=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}/${CODENAME}.pid
+			ExecStart=${MNODE_DAEMON} -daemon -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
 
 			Restart=always
 			RestartSec=70
