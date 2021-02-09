@@ -474,9 +474,8 @@ function create_systemd_configuration() {
 			Group=${MNODE_USER}
 			WorkingDirectory=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
 			Type=forking
-			PIDFile=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}/${CODENAME}.pid
-			ExecStart=${MNODE_DAEMON} -daemon -pid=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}/${CODENAME}.pid \
-			-conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
+			#PIDFile=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}/${CODENAME}.pid
+			ExecStart=${MNODE_DAEMON} -daemon -conf=${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf -datadir=${MNODE_DATA_BASE}/${CODENAME}_n${NUM}
 			ExecStop=${MNODE_CLI} stop
 			Restart=always
 			RestartSec=5
@@ -742,7 +741,7 @@ function source_config() {
         configure_firewall
         create_mn_configuration
         create_control_configuration
-        create_systemd_configuration2
+        create_systemd_configuration
     fi
     set_permissions
     cleanup_after
