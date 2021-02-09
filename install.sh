@@ -391,7 +391,7 @@ function create_mn_configuration() {
   then
     # RPC port.
     RPC_PORT[${NUM}]=56739
-    sed -e "s/RPC_PORT/${RPC_PORT}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+    sed -e "s/RPC_PORT/${RPC_PORT[${NUM}]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   fi
 
   if [[ -z "${EXTERNALIP[${NUM}]}" ]]
