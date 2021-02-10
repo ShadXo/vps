@@ -928,9 +928,9 @@ function get_public_ip(){
    # Get public IP
    if [[ "${net}" == "6" ]]
    then
-     EXTERNALIP[$NUM]=$( timeout --signal=SIGKILL 10s wget -6qO- -T 10 -t 2 -o- "--bind-address=${BIND[$NUM]}" http://v6.ident.me )
+     EXTERNALIP[$NUM]=$( timeout --signal=SIGKILL 10s wget -6qO- -T 10 -t 2 -o- "--bind-address=${BIND[${NUM}]}" http://v6.ident.me )
    else
-     EXTERNALIP[$NUM]=$( timeout --signal=SIGKILL 10s wget -4qO- -T 10 -t 2 -o- "--bind-address=${BIND[$NUM]}" http://ipinfo.io/ip )
+     EXTERNALIP[$NUM]=$( timeout --signal=SIGKILL 10s wget -4qO- -T 10 -t 2 -o- "--bind-address=${BIND[${NUM}]}" http://ipinfo.io/ip )
    fi
 
    # See if public IP was found.
@@ -938,11 +938,11 @@ function get_public_ip(){
    then
      if [[ "${net}" == "6" ]]
      then
-       #echo -e "\\nwget -6qO- -T 10 -t 2 -o- \"--bind-address=${BIND[$NUM]}\" http://v6.ident.me\\nfailed" >> ${SCRIPT_LOGFILE}
-       echo -e "wget -6qO- -T 10 -t 2 -o- \"--bind-address=${BIND[$NUM]}\" http://v6.ident.me failed" >> ${SCRIPT_LOGFILE}
+       #echo -e "\\nwget -6qO- -T 10 -t 2 -o- \"--bind-address=${BIND[${NUM}]}\" http://v6.ident.me\\nfailed" >> ${SCRIPT_LOGFILE}
+       echo -e "wget -6qO- -T 10 -t 2 -o- \"--bind-address=${BIND[${NUM}]}\" http://v6.ident.me failed" >> ${SCRIPT_LOGFILE}
      else
-       #echo -e "\\nwget -4qO- -T 10 -t 2 -o- \"--bind-address=${BIND[$NUM]}\" http://ipinfo.io/ip\\nfailed" >> ${SCRIPT_LOGFILE}
-       echo -e "wget -4qO- -T 10 -t 2 -o- \"--bind-address=${BIND[$NUM]}\" http://ipinfo.io/ip failed" >> ${SCRIPT_LOGFILE}
+       #echo -e "\\nwget -4qO- -T 10 -t 2 -o- \"--bind-address=${BIND[${NUM}]}\" http://ipinfo.io/ip\\nfailed" >> ${SCRIPT_LOGFILE}
+       echo -e "wget -4qO- -T 10 -t 2 -o- \"--bind-address=${BIND[${NUM}]}\" http://ipinfo.io/ip failed" >> ${SCRIPT_LOGFILE}
      fi
    fi
  done
