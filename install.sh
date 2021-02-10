@@ -909,7 +909,7 @@ function generate_mn_ports() {
   done
 }
 
-#function get_public_ip{
+function get_public_ip(){
  for NUM in $(seq 1 ${count}); do
    # Get public IP
    if [[ "${net}" == "6" ]]
@@ -933,7 +933,7 @@ function generate_mn_ports() {
    fi
  done
 
-#}
+}
 #
 # /* no parameters, create the required network configuration. IPv6 is auto.  */
 #
