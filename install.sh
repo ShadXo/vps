@@ -372,6 +372,7 @@ function create_mn_configuration() {
     BIND[$NUM]=192.168.10.40
     sed -e "s/BIND/${BIND[${NUM}]}:${MNODE_INBOUND_PORT[$NUM]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   else
+    echo "1"
     #sed -e "s/BIND/${BIND[${NUM}]}:${MNODE_INBOUND_PORT[$NUM]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   fi
 
