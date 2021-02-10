@@ -919,7 +919,7 @@ function find_free_port() {
 function generate_mn_ports() {
 
   for NUM in $(seq 1 ${count}); do
-    MNODE_INBOUND_PORT[$NUM]=${MNODE_INBOUND_PORT}
+    MNODE_INBOUND_PORT[${NUM}]=${MNODE_INBOUND_PORT}
   done
 }
 
@@ -928,13 +928,13 @@ function get_public_ip(){
    # Get public IP
    if [[ "${net}" == "6" ]]
    then
-     EXTERNALIP[$NUM]=$( timeout --signal=SIGKILL 10s wget -6qO- -T 10 -t 2 -o- "--bind-address=${BIND[${NUM}]}" http://v6.ident.me )
+     EXTERNALIP[${NUM}]=$( timeout --signal=SIGKILL 10s wget -6qO- -T 10 -t 2 -o- "--bind-address=${BIND[${NUM}]}" http://v6.ident.me )
    else
-     EXTERNALIP[$NUM]=$( timeout --signal=SIGKILL 10s wget -4qO- -T 10 -t 2 -o- "--bind-address=${BIND[${NUM}]}" http://ipinfo.io/ip )
+     EXTERNALIP[${NUM}]=$( timeout --signal=SIGKILL 10s wget -4qO- -T 10 -t 2 -o- "--bind-address=${BIND[${NUM}]}" http://ipinfo.io/ip )
    fi
 
    # See if public IP was found.
-   if [[ -z "${EXTERNALIP[$NUM]}" ]]
+   if [[ -z "${EXTERNALIP[${NUM}]}" ]]
    then
      if [[ "${net}" == "6" ]]
      then
@@ -1035,7 +1035,7 @@ function prepare_mn_interfaces() {
               #ip -6 addr add ${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}/64 dev ${ETH_INTERFACE} &>> ${SCRIPT_LOGFILE}
             fi
             # Create BIND
-            BIND[$NUM]="${IPV4}"
+            BIND[${NUM}]="${IPV4}"
         done # end forloop
     fi # end ifneteq4
 
@@ -1068,7 +1068,7 @@ function prepare_mn_interfaces() {
               ip -6 addr add ${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}/64 dev ${ETH_INTERFACE} &>> ${SCRIPT_LOGFILE}
             fi
             # Create BIND
-            BIND[$NUM]="[${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}]"
+            BIND[${NUM}]="[${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}]"
         done # end forloop
     fi # end ifneteq6
 
