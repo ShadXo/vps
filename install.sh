@@ -366,6 +366,7 @@ function create_mn_configuration() {
     sed -e "s/EXTERNALIP/${EXTERNALIP[${NUM}]:${MNODE_INBOUND_PORT[$NUM]}}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   else
     sed -e "s/EXTERNALIP/${EXTERNALIP[${NUM}]:${MNODE_INBOUND_PORT[$NUM]}}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+    echo "Add IP: $EXTERNALIP[${NUM}] Hier"
   fi
 
   if [ -z "${BIND[${NUM}]}" ]
@@ -932,7 +933,8 @@ function get_public_ip(){
    then
      EXTERNALIP[${NUM}]=$( timeout --signal=SIGKILL 10s wget -6qO- -T 10 -t 2 -o- "--bind-address=${BIND[${NUM}]}" http://v6.ident.me )
    else
-     EXTERNALIP[${NUM}]=$( wget -4qO- -T 10 -t 2 -o- "--bind-address=${BIND[${NUM}]}" http://ipinfo.io/ip )
+     EXTERNALIP[${NUM}]=$( timeout --signal=SIGKILL 10s wget -4qO- -T 10 -t 2 -o- "--bind-address=${BIND[${NUM}]}" http://ipinfo.io/ip )
+     echo "Get PUB IP: $EXTERNALIP[${NUM}] Hier"
    fi
 
    # See if public IP was found.
