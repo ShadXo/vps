@@ -262,7 +262,7 @@ function configure_firewall() {
 #
 function validate_netchoice() {
 
-    echo "* Validating network rules"
+  echo "* Validating network rules"
 
 	# break here of net isn't 4 or 6
 	if [ ${net} -ne 4 ] && [ ${net} -ne 6 ]; then
@@ -284,6 +284,8 @@ function validate_netchoice() {
 #    directory (eg. /etc/masternodes/${CODENAME} and replaces the existing placeholders if possible */
 #
 function create_mn_configuration() {
+
+  echo "* Creating config files"
 
   # always return to the script root
   cd ${SCRIPTPATH}
@@ -322,7 +324,7 @@ function create_mn_configuration() {
 		echo "running sed on file ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf"                                &>> ${SCRIPT_LOGFILE}
 	fi
 
-  if [[ -z "${RPC_USERNAME[${NUM}]}" ]]
+  if [ -z "${RPC_USERNAME[${NUM}]}" ]
   then
     # RPC username.
     RPC_USERNAME[${NUM}]=${CODENAME}
@@ -372,8 +374,7 @@ function create_mn_configuration() {
     BIND[$NUM]=192.168.10.40
     sed -e "s/BIND/${BIND[${NUM}]}:${MNODE_INBOUND_PORT[$NUM]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   else
-    echo "1"
-    #sed -e "s/BIND/${BIND[${NUM}]}:${MNODE_INBOUND_PORT[$NUM]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+    sed -e "s/BIND/${BIND[${NUM}]}:${MNODE_INBOUND_PORT[$NUM]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   fi
 
   # private key initialize
