@@ -634,9 +634,9 @@ function source_config() {
 		# main routine
 		print_logo
     if [ "$update" -eq 0 ]; then
+      prepare_mn_interfaces
       get_public_ip
       generate_mn_ports
-      prepare_mn_interfaces
       swaphack
     fi
     install_packages
@@ -934,6 +934,7 @@ function get_public_ip(){
  done
 
 }
+
 #
 # /* no parameters, create the required network configuration. IPv6 is auto.  */
 #
