@@ -339,7 +339,7 @@ function create_mn_configuration() {
     sed -e "s/RPC_PASSWORD/${RPC_PASSWORD[${NUM}]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   fi
 
-  if [[ -z "${RPC_IP[${NUM}]}" ]]; then
+  if [ -z "${RPC_IP[${NUM}]}" ]; then
     # RPC IP.
     if [ "${net}" -eq 4 ]; then
       RPC_IP[${NUM}]=127.0.0.1
@@ -350,14 +350,14 @@ function create_mn_configuration() {
       fi
     fi
 
-  if [[ -z "${RPC_PORT[${NUM}]}" ]]
+  if [ -z "${RPC_PORT[${NUM}]}" ]
   then
     # RPC port.
     RPC_PORT[${NUM}]=56739
     sed -e "s/RPC_PORT/${RPC_PORT[${NUM}]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   fi
 
-  if [[ -z "${EXTERNALIP[${NUM}]}" ]]
+  if [ -z "${EXTERNALIP[${NUM}]}" ]
   then
     # External IP.
     EXTERNALIP[${NUM}]=1.1.1.1
@@ -366,7 +366,7 @@ function create_mn_configuration() {
     sed -e "s/EXTERNALIP/${EXTERNALIP[${NUM}]:${MNODE_INBOUND_PORT[$NUM]}}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   fi
 
-  if [[ -z "${BIND[${NUM}]}" ]]
+  if [ -z "${BIND[${NUM}]}" ]
   then
     # Bind IP.
     BIND[$NUM]=192.168.10.40
