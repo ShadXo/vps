@@ -334,11 +334,21 @@ function create_mn_configuration() {
   then
     RPC_PASSWORD[${NUM}]="$( openssl rand -hex 44 )"
     sed -e "s/RPC_PASSWORD/${RPC_PASSWORD[${NUM}]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
-
   else
     RPC_PASSWORD[${NUM}]="$( pwgen -1 -s 44 )"
     sed -e "s/RPC_PASSWORD/${RPC_PASSWORD[${NUM}]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   fi
+
+  if [[ -z "${RPC_IP[${NUM}]}" ]]; then
+    # RPC IP.
+    if [ "${net}" -eq 4 ]; then
+      RPC_IP[${NUM}]=127.0.0.1
+      sed -e "s/RPC_IP/${RPC_IP[${NUM}]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+      else
+        RPC_IP[${NUM}]=::1
+        sed -e "s/RPC_IP/${RPC_IP[${NUM}]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+      fi
+    fi
 
   if [[ -z "${RPC_PORT[${NUM}]}" ]]
   then
