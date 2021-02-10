@@ -307,7 +307,7 @@ Please open a GitHub Issue  here: https://github.com/phoreproject/vps/issues if 
 https://discord.gg/sbgdcdv
 
 If you would like to make a donation to Phore's ongoing development, you can send Phore to the core team at this address: PDjGJMDzvJnvbxxgR1bgPm77fFLxn3KAg8
-`
+```
 Donate to me:
 ```
 BTC  3BRcnKnyrB6fa5zJ23b8hyTFPm5ehSYyek
