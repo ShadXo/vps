@@ -399,7 +399,7 @@ function create_mn_configuration() {
       #Write to .conf
       #sed -e "s/RPC_USERNAME/${RPC_USERNAME[${NUM}]}_rpc_${CODENAME}_n${NUM}/" -e "s/RPC_PASSWORD/${RPC_PASSWORD[${NUM}]}/" -e "s/RPC_PORT/${RPC_PORT[${NUM}]}/" -e "s/EXTERNALIP/${EXTERNALIP[${NUM}]}:${MNODE_INBOUND_PORT[${NUM}]}/" -e "s/BIND/[${BIND}:${MNODE_INBOUND_PORT[${NUM}]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
 	if [ -z "${PRIVKEY[${NUM}]}" ]; then
-		if [ "$startnodes" -eq 0 ]; then
+		if [ "$startnodes" -eq 1 ]; then
 			#uncomment masternode= and masternodeprivkey= so the node can autostart and sync
 			sed 's/\(^.*masternode\(\|privkey\)=.*$\)/#\1/' -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
 		fi
