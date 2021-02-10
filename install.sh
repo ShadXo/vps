@@ -359,19 +359,20 @@ function create_mn_configuration() {
     sed -e "s/RPC_PORT/${RPC_PORT[${NUM}]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   fi
 
+  # External IP.
   if [ -z "${EXTERNALIP[${NUM}]}" ]
   then
     # External IP.
     #EXTERNALIP[${NUM}]=1.1.1.1
-    #sed -e "s/EXTERNALIP/${EXTERNALIP[${NUM}]}:${MNODE_INBOUND_PORT[$NUM]}}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+    #sed -e "s/EXTERNALIP/${EXTERNALIP[${NUM}]}:${MNODE_INBOUND_PORT[$NUM]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
     echo "Public IP not found manually add it to ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf"
   else
-    sed -e "s/EXTERNALIP/${EXTERNALIP[${NUM}]}:${MNODE_INBOUND_PORT[$NUM]}}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+    sed -e "s/EXTERNALIP/${EXTERNALIP[${NUM}]}:${MNODE_INBOUND_PORT[$NUM]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   fi
 
+  # Bind IP.
   if [ -z "${BIND[${NUM}]}" ]
   then
-    # Bind IP.
     #BIND[$NUM]=192.168.10.40
     #sed -e "s/BIND/${BIND[${NUM}]}:${MNODE_INBOUND_PORT[$NUM]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
     echo "Private IP not found manually add it to ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf"
