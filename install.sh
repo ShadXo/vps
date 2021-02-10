@@ -909,7 +909,7 @@ function generate_mn_ports() {
   done
 }
 
-#function get_public_ip{
+function get_public_ip{
  for NUM in $(seq 1 ${count}); do
    # Get public IP
    if [[ "${net}" == "6" ]]
@@ -933,7 +933,7 @@ function generate_mn_ports() {
    fi
  done
 
-#}
+}
 #
 # /* no parameters, create the required network configuration. IPv6 is auto.  */
 #
@@ -991,36 +991,7 @@ function prepare_mn_interfaces() {
         exit 1
     fi
 
-    # generate the required ipv4 config
-    if [ "${net}" -eq 4 ]; then
 
-        # move current config out of the way first
-        #cp ${NETWORK_CONFIG} ${NETWORK_CONFIG}.${DATE_STAMP}.bkp &>> ${SCRIPT_LOGFILE}
-
-        # create the additional ipv4 interfaces, rc.local because it's more generic
-        for NUM in $(seq 1 ${count}); do
-
-            # check if the interfaces exist
-            ip -4 addr | grep -qi "${IPV4}"
-            if [ $? -eq 0 ]
-            then
-              echo "IP for masternode already exists, skipping creation" &>> ${SCRIPT_LOGFILE}
-            else
-              echo "Creating new IP address for ${CODENAME} masternode nr ${NUM}" &>> ${SCRIPT_LOGFILE}
-              if [ "${NETWORK_CONFIG}" = "/etc/rc.local" ]; then
-                # need to put network config in front of "exit 0" in rc.local
-                #sed -e '$i ip -6 addr add '"${IPV6_INT_BASE}"':'"${NETWORK_BASE_TAG}"'::'"${NUM}"'/64 dev '"${ETH_INTERFACE}"'\n' -i ${NETWORK_CONFIG} &>> ${SCRIPT_LOGFILE}
-              else
-                # if not using rc.local, append normally
-                echo "ip -6 addr add ${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}/64 dev ${ETH_INTERFACE}" >> ${NETWORK_CONFIG} &>> ${SCRIPT_LOGFILE}
-              fi
-              sleep 2
-              #ip -6 addr add ${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}/64 dev ${ETH_INTERFACE} &>> ${SCRIPT_LOGFILE}
-            fi
-            # Create BIND
-            $BIND[$NUM]="${IPV4}"
-        done # end forloop
-    fi # end ifneteq4
 
     # generate the required ipv6 config
     if [ "${net}" -eq 6 ]; then
