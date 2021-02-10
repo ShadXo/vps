@@ -362,18 +362,19 @@ function create_mn_configuration() {
   if [ -z "${EXTERNALIP[${NUM}]}" ]
   then
     # External IP.
-    EXTERNALIP[${NUM}]=1.1.1.1
-    sed -e "s/EXTERNALIP/${EXTERNALIP[${NUM}]:${MNODE_INBOUND_PORT[$NUM]}}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+    #EXTERNALIP[${NUM}]=1.1.1.1
+    #sed -e "s/EXTERNALIP/${EXTERNALIP[${NUM}]}:${MNODE_INBOUND_PORT[$NUM]}}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+    echo "Public IP not found manually add it to ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf"
   else
-    sed -e "s/EXTERNALIP/${EXTERNALIP[${NUM}]:${MNODE_INBOUND_PORT[$NUM]}}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
-    echo "Add IP: ${EXTERNALIP[${NUM}]} Hier"
+    sed -e "s/EXTERNALIP/${EXTERNALIP[${NUM}]}:${MNODE_INBOUND_PORT[$NUM]}}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   fi
 
   if [ -z "${BIND[${NUM}]}" ]
   then
     # Bind IP.
-    BIND[$NUM]=192.168.10.40
-    sed -e "s/BIND/${BIND[${NUM}]}:${MNODE_INBOUND_PORT[$NUM]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+    #BIND[$NUM]=192.168.10.40
+    #sed -e "s/BIND/${BIND[${NUM}]}:${MNODE_INBOUND_PORT[$NUM]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+    echo "Private IP not found manually add it to ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf"
   else
     sed -e "s/BIND/${BIND[${NUM}]}:${MNODE_INBOUND_PORT[$NUM]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   fi
@@ -395,7 +396,7 @@ function create_mn_configuration() {
   else :
   fi
       #Write to .conf
-      #sed -e "s/RPC_USERNAME/${RPC_USERNAME[${NUM}]}_rpc_${CODENAME}_n${NUM}/" -e "s/RPC_PASSWORD/${RPC_PASSWORD[${NUM}]}/" -e "s/RPC_PORT/${RPC_PORT[${NUM}]}/" -e "s/XXX_NUM_XXY/${NUM}]/" -e "s/XXX_IPV6_INT_BASE_XXX/[${IPV6_INT_BASE}/" -e "s/XXX_NETWORK_BASE_TAG_XXX/${NETWORK_BASE_TAG}/" -e "s/XXX_MNODE_INBOUND_PORT_XXX/${MNODE_INBOUND_PORT}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+      #sed -e "s/RPC_USERNAME/${RPC_USERNAME[${NUM}]}_rpc_${CODENAME}_n${NUM}/" -e "s/RPC_PASSWORD/${RPC_PASSWORD[${NUM}]}/" -e "s/RPC_PORT/${RPC_PORT[${NUM}]}/" -e "s/EXTERNALIP/${EXTERNALIP[${NUM}]}:${MNODE_INBOUND_PORT[${NUM}]}/" -e "s/BIND/[${BIND}:${MNODE_INBOUND_PORT[${NUM}]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
 	if [ -z "${PRIVKEY[${NUM}]}" ]; then
 		if [ "$startnodes" -eq 0 ]; then
 			#uncomment masternode= and masternodeprivkey= so the node can autostart and sync
