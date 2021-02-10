@@ -360,14 +360,14 @@ function create_mn_configuration() {
   if [[ -z "${EXTERNALIP[${NUM}]}" ]]
   then
     # External IP.
-    #EXTERNALIP[${NUM}]=1.1.1.1:56740
+    EXTERNALIP[${NUM}]=1.1.1.1:56740
     sed -e "s/EXTERNALIP/${EXTERNALIP[${NUM}]:${MNODE_INBOUND_PORT[$NUM]}}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   fi
 
   if [[ -z "${BIND[${NUM}]}" ]]
   then
     # Bind IP.
-    #BIND[$NUM]=192.168.10.40:56740
+    BIND[$NUM]=192.168.10.40:56740
     sed -e "s/BIND/${BIND[${NUM}]}:${MNODE_INBOUND_PORT[$NUM]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   fi
 
