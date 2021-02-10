@@ -238,53 +238,6 @@ function create_sentinel_setup() {
     echo "$(tput sgr0)$(tput setaf 2)* * * * * export SENTINEL_CONFIG=${SENTINEL_BASE}/${CODENAME}${NUM}_sentinel.conf; cd ${SENTINEL_BASE} && ${SENTINEL_ENV}/bin/python ${SENTINEL_BASE}/bin/sentinel.py >> /var/log/sentinel/sentinel-cron.log$(tput sgr0) 2>&1"
 }
 
-function find_free_port() {
-  PRIVIPADDRESS=${1}
-  if [[ -r /proc/sys/net/ipv4/ip_local_port_range ]]
-  then
-    read -r LOWERPORT UPPERPORT < /proc/sys/net/ipv4/ip_local_port_range
-  fi
-  if [[ ! $LOWERPORT =~ $RE ]] || [[ ! $UPPERPORT =~ $RE ]]
-  then
-    read -r LOWERPORT UPPERPORT <<< "$( sudo sysctl net.ipv4.ip_local_port_range | cut -d '=' -f2 )"
-  fi
-  if [[ ! $LOWERPORT =~ $RE ]] || [[ ! $UPPERPORT =~ $RE ]]
-  then
-    LOWERPORT=32769
-    UPPERPORT=60998
-  fi
-
-  LAST_PORT=0
-  while :
-  do
-    PORT_TO_TEST=$( shuf -i "${LOWERPORT}"-"${UPPERPORT}" -n 1 )
-    while [[ "${LAST_PORT}" == "${PORT_TO_TEST}" ]]
-    do
-      PORT_TO_TEST=$( shuf -i "${LOWERPORT}"-"${UPPERPORT}" -n 1 )
-      sleep 0.3
-    done
-    LAST_PORT="${PORT_TO_TEST}"
-    if [[ $( IS_PORT_OPEN "${PRIVIPADDRESS}" "${PORT_TO_TEST}" | tail -n 1 ) -eq 0 ]]
-    then
-      continue
-    fi
-    if [[ $( IS_PORT_OPEN "127.0.0.1" "${PORT_TO_TEST}" | tail -n 1 ) -eq 0 ]]
-    then
-      continue
-    fi
-    if [[ $( IS_PORT_OPEN "0.0.0.0" "${PORT_TO_TEST}" | tail -n 1 ) -eq 0 ]]
-    then
-      continue
-    fi
-    if [[ $( IS_PORT_OPEN "::" "${PORT_TO_TEST}" "\[::.*\]:${PORT_TO_TEST}" | tail -n 1 ) -eq 0 ]]
-    then
-      continue
-    fi
-    break
-  done
-  echo "${PORT_TO_TEST}"
-}
-
 #
 # /* no parameters, creates a minimal set of firewall rules that allows INBOUND masternode p2p & SSH ports */
 #
@@ -397,15 +350,15 @@ function create_mn_configuration() {
   if [[ -z "${EXTERNALIP[${NUM}]}" ]]
   then
     # External IP.
-    EXTERNALIP[${NUM}]=1.1.1.1:56740
-    sed -e "s/EXTERNALIP/${EXTERNALIP[${NUM}]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+    #EXTERNALIP[${NUM}]=1.1.1.1:56740
+    sed -e "s/EXTERNALIP/${EXTERNALIP[${NUM}]:${MNODE_INBOUND_PORT[$NUM]}}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   fi
 
   if [[ -z "${BIND[${NUM}]}" ]]
   then
     # Bind IP.
-    BIND[$NUM]=192.168.10.40:56740
-    sed -e "s/BIND/${BIND[${NUM}]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
+    #BIND[$NUM]=192.168.10.40:56740
+    sed -e "s/BIND/${BIND[${NUM}]}:${MNODE_INBOUND_PORT[$NUM]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   fi
 
   # private key initialize
@@ -681,8 +634,10 @@ function source_config() {
 		# main routine
 		print_logo
     if [ "$update" -eq 0 ]; then
-        prepare_mn_interfaces
-        swaphack
+      get_public_ip
+      generate_mn_ports
+      prepare_mn_interfaces
+      swaphack
     fi
     install_packages
     if [[ "$download" -eq 1 ]]; then
@@ -835,6 +790,150 @@ function final_call() {
     tput sgr0
 }
 
+function is_port_open() {
+  IPV4=${1}
+  PORT_TO_TEST=${2}
+  BIND=${3}
+  VERBOSE=${4}
+  INET=${5}
+  PUB_IPADDRESS=${6}
+
+  if [[ -z "${BIND}" ]]
+  then
+    if [[ ${IPV4} =~ .*:.* ]]
+    then
+      IPV4_SHORT=$( sipcalc "${IPV4}" | grep -iF 'Compressed address' | cut -d '-' -f2 | awk '{print $1}' )
+      BIND="\[${IPV4_SHORT}\]:${PORT_TO_TEST}"
+    else
+      BIND="${IPV4}:${PORT_TO_TEST}"
+    fi
+  fi
+
+  # see if port is used.
+  PORTS_USED=$( sudo -n ss -lpn 2>/dev/null | grep -P "${BIND} " )
+  # see if netcat can bind to port.
+  # shellcheck disable=SC2009
+  NETCAT_PIDS=$( ps -aux | grep -E '[n]etcat.*\-p.*\-l' | awk '{print $2}' )
+
+  # Clean start for netcat test.
+  while read -r NETCAT_PID
+  do
+    kill -9 "${NETCAT_PID}" >/dev/null 2>&1
+  done <<< "${NETCAT_PIDS}"
+
+  NETCAT_TEST=$( sudo -n timeout --signal=SIGKILL 0.3s netcat -p "${PORT_TO_TEST}" -l "${IPV4}" 2>&1 )
+  NETCAT_PID=$!
+  kill -9 "${NETCAT_PID}" >/dev/null 2>&1
+  sleep 0.1
+
+  # Clean up after.
+  # shellcheck disable=SC2009
+  NETCAT_PIDS=$( ps -aux | grep -E '[n]etcat.*\-p.*\-l' | awk '{print $2}' )
+  while read -r NETCAT_PID
+  do
+    kill -9 "${NETCAT_PID}" >/dev/null 2>&1
+  done <<< "${NETCAT_PIDS}"
+
+  if [[ "${VERBOSE}" -eq 1 ]]
+  then
+  {
+    echo
+    echo "${INET} ${PUB_IPADDRESS} ${IPV4}:${PORT_TO_TEST}"
+    echo "netcat test"
+    echo "${NETCAT_TEST}"
+    echo "ports in use test"
+    echo "${PORTS_USED}"
+  } >>/tmp/ipv46-verbose.log
+  fi
+
+  # echo 0 if port is not open.
+  if [[ "${#PORTS_USED}" -gt 10 ]] || [[ $( echo "${NETCAT_TEST}" | grep -ci 'in use' ) -gt 0 ]]
+  then
+    echo "0"
+  else
+    echo "${PORT_TO_TEST}"
+  fi
+}
+
+function find_free_port() {
+
+  if [[ -r /proc/sys/net/ipv4/ip_local_port_range ]]
+  then
+    read -r LOWERPORT UPPERPORT < /proc/sys/net/ipv4/ip_local_port_range
+  fi
+  if [[ ! $LOWERPORT =~ $RE ]] || [[ ! $UPPERPORT =~ $RE ]]
+  then
+    read -r LOWERPORT UPPERPORT <<< "$( sudo sysctl net.ipv4.ip_local_port_range | cut -d '=' -f2 )"
+  fi
+  if [[ ! $LOWERPORT =~ $RE ]] || [[ ! $UPPERPORT =~ $RE ]]
+  then
+    LOWERPORT=32769
+    UPPERPORT=60998
+  fi
+
+  LAST_PORT=0
+  while :
+  do
+    PORT_TO_TEST=$( shuf -i "${LOWERPORT}"-"${UPPERPORT}" -n 1 )
+    while [[ "${LAST_PORT}" == "${PORT_TO_TEST}" ]]
+    do
+      PORT_TO_TEST=$( shuf -i "${LOWERPORT}"-"${UPPERPORT}" -n 1 )
+      sleep 0.3
+    done
+    LAST_PORT="${PORT_TO_TEST}"
+    if [[ $( IS_PORT_OPEN "${IPV4}" "${PORT_TO_TEST}" | tail -n 1 ) -eq 0 ]]
+    then
+      continue
+    fi
+    if [[ $( IS_PORT_OPEN "127.0.0.1" "${PORT_TO_TEST}" | tail -n 1 ) -eq 0 ]]
+    then
+      continue
+    fi
+    if [[ $( IS_PORT_OPEN "0.0.0.0" "${PORT_TO_TEST}" | tail -n 1 ) -eq 0 ]]
+    then
+      continue
+    fi
+    if [[ $( IS_PORT_OPEN "::" "${PORT_TO_TEST}" "\[::.*\]:${PORT_TO_TEST}" | tail -n 1 ) -eq 0 ]]
+    then
+      continue
+    fi
+    break
+  done
+  echo "${PORT_TO_TEST}"
+}
+
+function generate_mn_ports() {
+
+  for NUM in $(seq 1 ${count}); do
+    MNODE_INBOUND_PORT[$NUM]=${MNODE_INBOUND_PORT}
+  done
+}
+
+function get_public_ip{
+ for NUM in $(seq 1 ${count}); do
+   # Get public IP
+   if [[ "${net}" == "6" ]]
+   then
+     EXTERNALIP[$NUM]=$( timeout --signal=SIGKILL 10s wget -6qO- -T 10 -t 2 -o- "--bind-address=${BIND[$NUM]}" http://v6.ident.me )
+   else
+     EXTERNALIP[$NUM]=$( timeout --signal=SIGKILL 10s wget -4qO- -T 10 -t 2 -o- "--bind-address=${BIND[$NUM]}" http://ipinfo.io/ip )
+   fi
+
+   # See if public IP was found.
+   if [[ -z "${EXTERNALIP[$NUM]}" ]]
+   then
+     if [[ "${net}" == "6" ]]
+     then
+       #echo -e "\\nwget -6qO- -T 10 -t 2 -o- \"--bind-address=${BIND[$NUM]}\" http://v6.ident.me\\nfailed" >> ${SCRIPT_LOGFILE}
+       echo -e "wget -6qO- -T 10 -t 2 -o- \"--bind-address=${BIND[$NUM]}\" http://v6.ident.me failed" >> ${SCRIPT_LOGFILE}
+     else
+       #echo -e "\\nwget -4qO- -T 10 -t 2 -o- \"--bind-address=${BIND[$NUM]}\" http://ipinfo.io/ip\\nfailed" >> ${SCRIPT_LOGFILE}
+       echo -e "wget -4qO- -T 10 -t 2 -o- \"--bind-address=${BIND[$NUM]}\" http://ipinfo.io/ip failed" >> ${SCRIPT_LOGFILE}
+     fi
+   fi
+ done
+
+}
 #
 # /* no parameters, create the required network configuration. IPv6 is auto.  */
 #
@@ -876,6 +975,7 @@ function prepare_mn_interfaces() {
         fi
     fi
 
+    IPV4="$(ip -4 addr show dev ${ETH_INTERFACE} | grep inet | awk -F '[ \t]+|/' '{print $3}'  | head -1)" &>> ${SCRIPT_LOGFILE}
     IPV6_INT_BASE="$(ip -6 addr show dev ${ETH_INTERFACE} | grep inet6 | awk -F '[ \t]+|/' '{print $3}' | grep -v ^fe80 | grep -v ^::1 | cut -f1-4 -d':' | head -1)" &>> ${SCRIPT_LOGFILE}
 
     validate_netchoice
@@ -892,16 +992,16 @@ function prepare_mn_interfaces() {
     fi
 
     # generate the required ipv4 config
-    if [ "${net_test}" -eq 4 ]; then
+    if [ "${net}" -eq 4 ]; then
 
         # move current config out of the way first
-        cp ${NETWORK_CONFIG} ${NETWORK_CONFIG}.${DATE_STAMP}.bkp &>> ${SCRIPT_LOGFILE}
+        #cp ${NETWORK_CONFIG} ${NETWORK_CONFIG}.${DATE_STAMP}.bkp &>> ${SCRIPT_LOGFILE}
 
-        # create the additional ipv6 interfaces, rc.local because it's more generic
+        # create the additional ipv4 interfaces, rc.local because it's more generic
         for NUM in $(seq 1 ${count}); do
 
             # check if the interfaces exist
-            ip -6 addr | grep -qi "${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}"
+            ip -4 addr | grep -qi "${IPV4}"
             if [ $? -eq 0 ]
             then
               echo "IP for masternode already exists, skipping creation" &>> ${SCRIPT_LOGFILE}
@@ -909,16 +1009,16 @@ function prepare_mn_interfaces() {
               echo "Creating new IP address for ${CODENAME} masternode nr ${NUM}" &>> ${SCRIPT_LOGFILE}
               if [ "${NETWORK_CONFIG}" = "/etc/rc.local" ]; then
                 # need to put network config in front of "exit 0" in rc.local
-                sed -e '$i ip -6 addr add '"${IPV6_INT_BASE}"':'"${NETWORK_BASE_TAG}"'::'"${NUM}"'/64 dev '"${ETH_INTERFACE}"'\n' -i ${NETWORK_CONFIG} &>> ${SCRIPT_LOGFILE}
+                #sed -e '$i ip -6 addr add '"${IPV6_INT_BASE}"':'"${NETWORK_BASE_TAG}"'::'"${NUM}"'/64 dev '"${ETH_INTERFACE}"'\n' -i ${NETWORK_CONFIG} &>> ${SCRIPT_LOGFILE}
               else
                 # if not using rc.local, append normally
-                  echo "ip -6 addr add ${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}/64 dev ${ETH_INTERFACE}" >> ${NETWORK_CONFIG} &>> ${SCRIPT_LOGFILE}
+                  #echo "ip -6 addr add ${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}/64 dev ${ETH_INTERFACE}" >> ${NETWORK_CONFIG} &>> ${SCRIPT_LOGFILE}
               fi
               sleep 2
-              ip -6 addr add ${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}/64 dev ${ETH_INTERFACE} &>> ${SCRIPT_LOGFILE}
+              #ip -6 addr add ${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}/64 dev ${ETH_INTERFACE} &>> ${SCRIPT_LOGFILE}
             fi
             # Create BIND
-            $BIND[$NUM]="[${IPV6_INT_BASE}:${NETWORK_BASE_TAG}::${NUM}]"
+            $BIND[$NUM]="${IPV4}"
         done # end forloop
     fi # end ifneteq4
 
