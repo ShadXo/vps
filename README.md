@@ -1,4 +1,4 @@
-# Phore Masternode VPS Installation
+# Masternode VPS Installation
 
 This masternode installation script vastly simplifies the setup of a Phore masternode running on a virtual private server (VPS), and it also adds a number of other powerful features, including:
 
@@ -23,6 +23,7 @@ This project was forked from https://github.com/masternodes/vps. @marsmensch (Fl
 ```
 BTC  33ENWZ9RCYBG7nv6ac8KxBUSuQX64Hx3x3
 ```
+Donate to me BTC: 3BRcnKnyrB6fa5zJ23b8hyTFPm5ehSYyek
 
 # Install guide on vultr
 
@@ -302,4 +303,4 @@ Please open a GitHub Issue  here: https://github.com/phoreproject/vps/issues if 
 
 https://discord.gg/sbgdcdv
 
-If you would like to make a donation to Phore's ongoing development, you can send Phore to the core team at this address: PDjGJMDzvJnvbxxgR1bgPm77fFLxn3KAg8
+If you would like to make a donation to Phore's ongoing development, you can send Phore to the core team at this address: PDjGJMDzvJnvbxxgR1bgPm77fFLxn3KAg8 Donate to me BTC: 3BRcnKnyrB6fa5zJ23b8hyTFPm5ehSYyek
