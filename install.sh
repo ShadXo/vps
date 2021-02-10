@@ -360,7 +360,7 @@ function create_mn_configuration() {
   if [[ -z "${EXTERNALIP[${NUM}]}" ]]
   then
     # External IP.
-    EXTERNALIP[${NUM}]=1.1.1.1:56740
+    EXTERNALIP[${NUM}]=1.1.1.1
     sed -e "s/EXTERNALIP/${EXTERNALIP[${NUM}]:${MNODE_INBOUND_PORT[$NUM]}}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   else
     sed -e "s/EXTERNALIP/${EXTERNALIP[${NUM}]:${MNODE_INBOUND_PORT[$NUM]}}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
@@ -369,7 +369,7 @@ function create_mn_configuration() {
   if [[ -z "${BIND[${NUM}]}" ]]
   then
     # Bind IP.
-    BIND[$NUM]=192.168.10.40:56740
+    BIND[$NUM]=192.168.10.40
     sed -e "s/BIND/${BIND[${NUM}]}:${MNODE_INBOUND_PORT[$NUM]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
   else
     sed -e "s/BIND/${BIND[${NUM}]}:${MNODE_INBOUND_PORT[$NUM]}/" -i ${MNODE_CONF_BASE}/${CODENAME}_n${NUM}.conf
@@ -990,7 +990,7 @@ function prepare_mn_interfaces() {
         fi
     fi
 
-    IPV4="$(ip -4 addr show dev ${ETH_INTERFACE} | grep inet | awk -F '[ \t]+|/' '{print $3}'  | head -1)" &>> ${SCRIPT_LOGFILE}
+    IPV4="$(ip -4 addr show dev ${ETH_INTERFACE} | grep inet | awk -F '[ \t]+|/' '{print $3}' | head -1)" &>> ${SCRIPT_LOGFILE}
     IPV6_INT_BASE="$(ip -6 addr show dev ${ETH_INTERFACE} | grep inet6 | awk -F '[ \t]+|/' '{print $3}' | grep -v ^fe80 | grep -v ^::1 | cut -f1-4 -d':' | head -1)" &>> ${SCRIPT_LOGFILE}
 
     validate_netchoice
